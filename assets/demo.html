@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>新能源重卡电池系统 · 交互演示</title>
+<style>
+:root{
+  --blue:#007AFF; --green:#34C759; --indigo:#5856D6; --orange:#FF9500; --red:#FF3B30;
+  --teal:#0D9488; --gray:#8E8E93;
+  --bg:#F2F2F7; --card:#FFFFFF;
+  --l1:#1C1C1E; --l2:rgba(60,60,67,.62); --l3:rgba(60,60,67,.34);
+  --sep:rgba(60,60,67,.11); --fill:rgba(120,120,128,.12);
+  --sh:0 1px 2px rgba(0,0,0,.04),0 6px 20px rgba(0,0,0,.055);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--l1);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif;
+  font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.wrap{height:100%;display:flex;flex-direction:column;gap:9px;padding:10px 14px 12px;max-width:1500px;margin:0 auto}
+header{display:flex;align-items:center;gap:9px;flex:none}
+header h1{font-size:17px;font-weight:700;letter-spacing:-.3px}
+.badge{font-size:11px;font-weight:600;color:var(--teal);background:rgba(13,148,136,.1);padding:2px 9px;border-radius:99px}
+.hintbtn{margin-left:auto;width:22px;height:22px;border-radius:50%;border:1px solid var(--sep);
+  background:var(--card);color:var(--l2);font-size:12px;font-weight:700;cursor:pointer;line-height:20px;text-align:center}
+.main{flex:1;display:grid;grid-template-columns:minmax(0,1.36fr) minmax(316px,1fr);gap:9px;min-height:0}
+.card{background:var(--card);border-radius:14px;box-shadow:var(--sh);padding:11px 12px;
+  display:flex;flex-direction:column;min-height:0}
+.card>h2{font-size:12px;font-weight:700;color:var(--l2);letter-spacing:.2px;margin-bottom:8px;flex:none;
+  display:flex;align-items:center;gap:6px}
+.card>h2 em{font-style:normal;margin-left:auto;font-size:11px;color:var(--l3);font-weight:600}
+
+/* ---------- 场景 ---------- */
+.svgbox{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+svg.scene{width:100%;height:100%;max-height:100%}
+.part{cursor:pointer}
+.part .hit{fill:var(--blue);opacity:0;transition:opacity .16s}
+.part:hover .hit{opacity:.12}
+.part.on .hit{opacity:.14}
+.part .outline{stroke:var(--blue);stroke-width:2.5;fill:none;opacity:0;transition:opacity .16s;pointer-events:none}
+.part.on .outline,.part:hover .outline{opacity:.85}
+.part path.hit{fill:none;stroke:var(--blue);stroke-width:20;stroke-linecap:round}
+.part path.outline{fill:none;stroke:var(--blue);stroke-width:3;stroke-linejoin:round}
+.lbl{font-size:10.5px;fill:var(--l2);font-weight:600}
+.lbl-s{font-size:9.5px;fill:var(--l3)}
+.lead{stroke:var(--l3);stroke-width:1;stroke-dasharray:3 3;fill:none}
+
+/* ---------- 控件 ---------- */
+.pedals{display:flex;gap:9px;align-items:stretch;flex-wrap:wrap}
+.ped{width:98px;height:90px;border-radius:12px;background:var(--card);position:relative;overflow:hidden;
+  box-shadow:var(--sh);cursor:pointer;flex:none;touch-action:none;-webkit-user-select:none;user-select:none;
+  border:2px solid transparent;transition:border-color .18s,transform .1s}
+.ped:active{transform:scale(.985)}
+.ped.accel{color:var(--blue)} .ped.brake{color:var(--green)}
+.ped.chg{color:var(--indigo)} .ped.idle{color:var(--gray)}
+.ped.act{border-color:currentColor}
+.ped .fill{position:absolute;left:0;right:0;bottom:26px;height:0;background:currentColor;opacity:.85;
+  transition:height .08s linear}
+.ped .lab{position:absolute;left:0;right:0;bottom:0;height:26px;background:rgba(255,255,255,.96);
+  display:flex;align-items:center;justify-content:space-between;padding:0 9px;font-size:11.5px;font-weight:700}
+.ped .lab span{font-variant-numeric:tabular-nums;color:currentColor}
+.ped .big{position:absolute;top:9px;left:0;right:0;text-align:center;font-size:17px;font-weight:700;
+  z-index:2;font-variant-numeric:tabular-nums;color:var(--l1);transition:color .15s}
+.ped .big.wt{color:#fff}
+.ped.idle .big{font-size:13px;top:26px}
+
+/* ---------- 读数 ---------- */
+.readout{flex:1;min-width:150px;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.readout .k{font-size:10.5px;color:var(--l3);font-weight:600}
+.readout .v{font-size:27px;font-weight:700;line-height:1.05;font-variant-numeric:tabular-nums}
+.readout .v i{font-style:normal;font-size:13px;color:var(--l3);margin-left:2px}
+.readout .t{font-size:11.5px;font-weight:600}
+.tstate{padding:7px 10px;border-radius:10px;font-size:11px;font-weight:600;line-height:1.45;
+  min-width:196px;display:flex;align-items:center}
+.tstate.cool{background:rgba(0,122,255,.1);color:#0057B8}
+.tstate.heat{background:rgba(255,149,0,.13);color:#B25000}
+.tstate.circ{background:rgba(52,199,89,.13);color:#1E7B33}
+.tstate.off{background:var(--fill);color:var(--l2)}
+.tstate.alarm{background:rgba(255,59,48,.12);color:#C4271F}
+.tstate.good{background:rgba(52,199,89,.13);color:#1E7B33}
+.coolLn{fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;opacity:.75}
+.coolLn.sup{stroke:#38BDF8}
+.coolLn.ret{stroke:#FB923C}
+
+/* ---------- 仪表 ---------- */
+.gauges{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;flex:none}
+.g{background:var(--bg);border-radius:10px;padding:7px 8px;cursor:default}
+.g .k{font-size:9.5px;color:var(--l3);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g .v{font-size:16px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums;letter-spacing:-.2px}
+.g .v i{font-style:normal;font-size:10px;color:var(--l3);margin-left:1px}
+.g .s{font-size:9.5px;color:var(--l3);font-weight:600}
+.g.hero{grid-column:span 2;background:rgba(13,148,136,.09)}
+.g.hero .v{font-size:25px;color:var(--teal)}
+.socbar{height:5px;background:rgba(13,148,136,.18);border-radius:99px;overflow:hidden;margin-top:6px}
+.socbar i{display:block;height:100%;background:var(--teal);border-radius:99px}
+
+/* ---------- 控制 ---------- */
+.ctrl{margin-top:9px;padding-top:9px;border-top:1px solid var(--sep);flex:none}
+.row{margin-bottom:8px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.row>label{font-size:10.5px;font-weight:600;color:var(--l2);min-width:52px}
+.row .val{font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;min-width:44px;text-align:right}
+input[type=range]{-webkit-appearance:none;appearance:none;flex:1;min-width:80px;height:18px;background:transparent;outline:none}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:rgba(120,120,128,.22)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;height:19px;margin-top:-7.5px;
+  border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2),0 0 0 .5px rgba(0,0,0,.05)}
+input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:rgba(120,120,128,.22)}
+input[type=range]::-moz-range-thumb{width:19px;height:19px;border:0;border-radius:50%;background:#fff;
+  box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.seg{display:inline-flex;background:var(--fill);border-radius:9px;padding:2px;gap:2px}
+.seg button{border:0;background:transparent;color:var(--l1);font-family:inherit;font-size:11px;font-weight:600;
+  padding:4px 9px;border-radius:7px;cursor:pointer;transition:.16s;white-space:nowrap}
+.seg button.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.sw{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:600;color:var(--l2);cursor:pointer}
+.sw input{display:none}
+.sw .tg{width:37px;height:22px;border-radius:11px;background:rgba(120,120,128,.2);position:relative;transition:.22s;flex:none}
+.sw .tg::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.22);transition:.22s}
+.sw input:checked+.tg{background:var(--green)}
+.sw input:checked+.tg::after{transform:translateX(15px)}
+
+/* ---------- 电池包 ---------- */
+.packs{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;flex:none}
+.pk{border-radius:12px;padding:9px 10px;cursor:pointer;background:var(--card);box-shadow:var(--sh);
+  border:2px solid transparent;transition:.16s;position:relative}
+.pk:hover{transform:translateY(-1px)}
+.pk.on{border-color:currentColor}
+.pk .nm{font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:6px;color:var(--l1)}
+.pk .dot{width:8px;height:8px;border-radius:50%;flex:none;background:currentColor}
+.pk .kv{display:flex;justify-content:space-between;font-size:11px;color:var(--l2);margin-top:1px}
+.pk .kv b{color:var(--l1);font-variant-numeric:tabular-nums}
+.mini{display:flex;align-items:center;gap:6px;font-size:10px;margin-top:5px}
+.mini span{color:var(--l3);width:22px;flex:none;font-weight:600}
+.mini .mt{flex:1;height:7px;background:var(--fill);border-radius:4px;overflow:hidden}
+.mini .mt i{display:block;height:100%;border-radius:4px;background:currentColor;transition:width .3s}
+.mini .mt.i2 i{opacity:.5}
+.mini .mt.win{position:relative}
+.mini .mt.win i{position:absolute;left:0;top:0;bottom:0;height:auto}
+.mini .mt u{position:absolute;top:-2px;width:2.5px;height:11px;background:var(--l1);opacity:.6;
+  border-radius:1px;text-decoration:none;transform:translateX(-1px)}
+.mini b{width:52px;text-align:right;font-variant-numeric:tabular-nums;color:var(--l1);font-weight:700;flex:none}
+
+/* ---------- 折叠说明 ---------- */
+details.notes{flex:none;border-radius:12px;background:var(--card);box-shadow:var(--sh);padding:8px 12px}
+details.notes summary{font-size:11.5px;font-weight:700;color:var(--l2);cursor:pointer;list-style:none;
+  display:flex;align-items:center;gap:6px}
+details.notes summary::-webkit-details-marker{display:none}
+details.notes summary::after{content:"›";margin-left:auto;font-size:15px;color:var(--l3);transition:.2s}
+details.notes[open] summary::after{transform:rotate(90deg)}
+details.notes[open] summary{margin-bottom:8px;color:var(--l1)}
+.notes .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.notes h4{font-size:11px;font-weight:700;color:var(--teal);margin-bottom:4px}
+.notes ul{list-style:none;font-size:11px;color:var(--l2);line-height:1.75}
+.notes li{padding-left:10px;position:relative}
+.notes li::before{content:"";position:absolute;left:0;top:7px;width:3.5px;height:3.5px;border-radius:50%;background:var(--l3)}
+.notes code{background:var(--bg);padding:1px 4px;border-radius:4px;font-size:10.5px;
+  font-family:"SFMono-Regular",Consolas,monospace;color:var(--l1)}
+.warnbox{margin-top:8px;background:rgba(255,149,0,.1);border-radius:9px;padding:8px 10px;
+  font-size:11px;color:#8A4B00;line-height:1.65}
+.warnbox b{color:#6B3A00}
+
+/* ---------- tooltip ---------- */
+.tip{position:fixed;z-index:999;max-width:300px;background:rgba(250,250,250,.97);
+  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
+  border:.5px solid rgba(60,60,67,.14);border-radius:12px;padding:10px 12px;
+  box-shadow:0 8px 30px rgba(0,0,0,.18);font-size:11.5px;line-height:1.6;color:var(--l2);
+  pointer-events:none;opacity:0;transform:translateY(3px);transition:opacity .14s,transform .14s}
+.tip.on{opacity:1;transform:translateY(0)}
+.tip b{display:block;font-size:12.5px;color:var(--l1);margin-bottom:3px}
+.tip em{font-style:normal;display:block;font-size:10.5px;color:var(--l3);margin-bottom:5px}
+.tip .spec{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
+.tip .spec span{background:rgba(120,120,128,.1);border-radius:5px;padding:2px 6px;font-size:10px;
+  color:var(--l2);font-weight:600}
+
+/* ================= 响应式：三档 ================= */
+/* 档 1 · 780-1199px（小笔记本 / 平板横屏）：保留左右双列，参数区收窄，仪表 3 列 */
+@media(max-width:1199px){
+  .wrap{padding:8px 10px 10px;gap:7px}
+  .main{grid-template-columns:minmax(0,1.25fr) minmax(288px,.85fr);gap:7px}
+  header h1{font-size:15.5px}
+  .badge{font-size:10px}
+  .card{padding:9px 10px}
+  .card>h2{margin-bottom:6px}
+  .gauges{grid-template-columns:repeat(3,1fr);gap:6px}
+  .g.hero{grid-column:span 3}
+  .g .v{font-size:15px}
+  .g.hero .v{font-size:22px}
+  .readout .v{font-size:23px}
+  .ped{width:88px;height:82px}
+  .ped .big{font-size:15px}
+  .packs{gap:7px}
+  .lbl{font-size:12.5px}
+  .notes .cols{gap:10px}
+}
+/* 档 2 · <780px（平板竖屏 / 手机）：单列流式，场景限高，packs 2 列，SVG 标签再补偿 */
+@media(max-width:779px){
+  html,body{overflow:auto}
+  .wrap{height:auto;min-height:100%;padding:8px 10px 12px}
+  .main{grid-template-columns:1fr;gap:7px}
+  .svgbox{height:27vh;min-height:168px;flex:none}
+  .gauges{grid-template-columns:repeat(4,1fr)}
+  .g.hero{grid-column:span 2}
+  .g .v{font-size:14px}
+  .g.hero .v{font-size:20px}
+  .ped{width:76px;height:74px}
+  .ped .big{font-size:14px}
+  .ped .lab{height:24px;font-size:10.5px;padding:0 7px}
+  .ped .fill{bottom:24px}
+  .readout{min-width:118px}
+  .readout .v{font-size:21px}
+  .tstate{min-width:0;flex:1}
+  .packs{grid-template-columns:repeat(2,1fr)}
+  .notes .cols{grid-template-columns:1fr}
+  .lbl{font-size:14px}
+  .tip{max-width:min(300px,86vw)}
+}
+/* 矮屏：允许滚动，不挤压 */
+@media(max-height:760px){html,body{overflow:auto}.wrap{height:auto;min-height:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>新能源重卡电池系统</h1>
+  <span class="badge">CTB 单包 · 集成式热管理</span>
+  <div class="hintbtn" data-tipkey="howto">?</div>
+</header>
+
+<div class="main">
+  <!-- ================= 场景 ================= -->
+  <section class="card">
+    <h2>系统布置与能量流<em>悬停查看部件说明</em></h2>
+    <div class="svgbox">
+      <svg class="scene" viewBox="0 0 660 372" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="gP" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#DBEAFE"/><stop offset="1" stop-color="#EFF6FF"/></linearGradient>
+          <linearGradient id="gB" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#E8EDF3"/><stop offset="1" stop-color="#DBE2EA"/></linearGradient>
+          <linearGradient id="gX" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#F7F8FA"/><stop offset="1" stop-color="#ECEFF3"/></linearGradient>
+          <marker id="ar" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+            <path d="M0 0 L7 3.5 L0 7 z" fill="#AEAEB2"/></marker>
+        </defs>
+
+        <ellipse cx="330" cy="334" rx="290" ry="7" fill="rgba(0,0,0,.05)"/>
+        <line x1="8" y1="336" x2="652" y2="336" stroke="#D1D1D6" stroke-width="2"/>
+        <line x1="8" y1="342" x2="652" y2="342" stroke="#E5E5EA" stroke-width="2"/>
+
+        <g stroke="#AEAEB2" stroke-width="1.5" marker-end="url(#ar)">
+          <line x1="2" y1="196" x2="26" y2="196"/><line x1="2" y1="210" x2="26" y2="210"/>
+          <line x1="2" y1="224" x2="26" y2="224"/>
+        </g>
+
+        <!-- 货箱 -->
+        <g class="part" data-key="box">
+          <rect x="182" y="108" width="414" height="132" rx="4" fill="url(#gX)" stroke="#AEAEB2" stroke-width="1.5"/>
+          <rect x="182" y="108" width="414" height="9" rx="4" fill="#EDF0F4"/>
+          <g stroke="#E4E7EC" stroke-width="1">
+            <line x1="222" y1="117" x2="222" y2="228"/><line x1="262" y1="117" x2="262" y2="228"/>
+            <line x1="302" y1="117" x2="302" y2="228"/><line x1="342" y1="117" x2="342" y2="228"/>
+            <line x1="382" y1="117" x2="382" y2="228"/><line x1="422" y1="117" x2="422" y2="228"/>
+            <line x1="462" y1="117" x2="462" y2="228"/><line x1="502" y1="117" x2="502" y2="228"/>
+            <line x1="542" y1="117" x2="542" y2="228"/>
+          </g>
+          <rect x="182" y="228" width="414" height="12" fill="#E4E7EC" stroke="#AEAEB2" stroke-width="1"/>
+          <line x1="578" y1="117" x2="578" y2="228" stroke="#C9CDD4" stroke-width="1.2"/>
+          <line x1="582" y1="112" x2="582" y2="236" stroke="#AEAEB2" stroke-width="1.5"/>
+          <g fill="#C9CDD4">
+            <rect x="574" y="132" width="4" height="10" rx="1"/><rect x="574" y="154" width="4" height="10" rx="1"/>
+            <rect x="574" y="176" width="4" height="10" rx="1"/><rect x="574" y="198" width="4" height="10" rx="1"/>
+          </g>
+          <rect class="hit" x="180" y="106" width="418" height="136" rx="4"/>
+          <rect class="outline" x="180" y="106" width="418" height="136" rx="4"/>
+          <text x="192" y="134" class="lbl" style="font-size:11px">货箱（上装）</text>
+        </g>
+
+        <!-- 驾驶室 -->
+        <g class="part" data-key="cab">
+          <path d="M 26 242 L 26 176 L 40 154 L 78 142 L 170 142 L 170 242 Z" fill="url(#gB)" stroke="#AEAEB2" stroke-width="1.5"/>
+          <rect x="48" y="156" width="104" height="26" rx="3" fill="#CFE3F5" stroke="#AEAEB2" stroke-width="1"/>
+          <line x1="76" y1="158" x2="76" y2="180" stroke="#AEAEB2" stroke-width=".8"/>
+          <line x1="100" y1="158" x2="100" y2="180" stroke="#AEAEB2" stroke-width=".8"/>
+          <line x1="124" y1="158" x2="124" y2="180" stroke="#AEAEB2" stroke-width=".8"/>
+          <rect x="44" y="150" width="112" height="5" rx="2" fill="#D5DBE3"/>
+          <rect x="23" y="150" width="10" height="12" rx="2" fill="#C7CDD6" stroke="#AEAEB2" stroke-width=".8"/>
+          <rect x="24" y="236" width="22" height="6" rx="2" fill="#6E6E73"/>
+          <rect x="173" y="118" width="7" height="124" rx="3" fill="#C7C7CC" stroke="#AEAEB2" stroke-width=".8"/>
+          <rect class="hit" x="22" y="140" width="160" height="104" rx="5"/>
+          <rect class="outline" x="22" y="140" width="160" height="104" rx="5"/>
+          <text x="96" y="136" class="lbl">驾驶室</text>
+        </g>
+
+        <!-- 集成式液冷机组 -->
+        <g class="part" data-key="chiller">
+          <rect x="30" y="182" width="40" height="54" rx="4" fill="#EAF3FC" stroke="#007AFF" stroke-width="1.8"/>
+          <rect x="33" y="185" width="34" height="12" rx="2" fill="#D6E9FB" stroke="#007AFF" stroke-width=".9"/>
+          <g stroke="#007AFF" stroke-width=".8">
+            <line x1="36" y1="185" x2="36" y2="197"/><line x1="40" y1="185" x2="40" y2="197"/>
+            <line x1="44" y1="185" x2="44" y2="197"/><line x1="48" y1="185" x2="48" y2="197"/>
+            <line x1="52" y1="185" x2="52" y2="197"/><line x1="56" y1="185" x2="56" y2="197"/>
+            <line x1="60" y1="185" x2="60" y2="197"/><line x1="64" y1="185" x2="64" y2="197"/>
+          </g>
+          <circle cx="50" cy="209" r="11" fill="#fff" stroke="#007AFF" stroke-width="1.4"/>
+          <g stroke="#007AFF" stroke-width="1.1">
+            <line x1="50" y1="199" x2="50" y2="219"/><line x1="41" y1="209" x2="59" y2="209"/>
+            <line x1="44" y1="203" x2="56" y2="215"/><line x1="56" y1="203" x2="44" y2="215"/>
+          </g>
+          <circle cx="50" cy="209" r="3.4" fill="#007AFF"/>
+          <rect x="34" y="223" width="13" height="10" rx="2" fill="#fff" stroke="#007AFF" stroke-width="1"/>
+          <rect x="53" y="223" width="13" height="10" rx="2" fill="#FFE9C7" stroke="#FF9500" stroke-width="1"/>
+          <rect class="hit" x="28" y="180" width="44" height="58" rx="5"/>
+          <rect class="outline" x="28" y="180" width="44" height="58" rx="5"/>
+          <path class="lead" d="M 50 180 L 50 152 L 10 152"/>
+          <text x="6" y="124" class="lbl" fill="#007AFF">集成式液冷机组</text>
+        </g>
+
+        <!-- 座椅 + 高压箱 -->
+        <g class="part" data-key="pdu">
+          <rect x="104" y="170" width="32" height="7" rx="2" fill="#C9D2DD" stroke="#AEAEB2" stroke-width=".8"/>
+          <rect x="100" y="176" width="40" height="34" rx="4" fill="#E2E8EF" stroke="#AEAEB2" stroke-width="1"/>
+          <line x1="100" y1="186" x2="140" y2="186" stroke="#C9D2DD" stroke-width=".8"/>
+          <rect x="96" y="212" width="50" height="18" rx="3" fill="#FFF2CC" stroke="#FF9500" stroke-width="1.8"/>
+          <g fill="#FF9500">
+            <rect x="101" y="216" width="8" height="10" rx="1"/><rect x="113" y="216" width="8" height="10" rx="1"/>
+            <rect x="129" y="216" width="8" height="10" rx="1"/>
+          </g>
+          <path d="M 124 216 L 126 219 L 124 222 L 126 225" fill="none" stroke="#FF9500" stroke-width="1.2"/>
+          <rect class="hit" x="94" y="168" width="54" height="64" rx="5"/>
+          <rect class="outline" x="94" y="168" width="54" height="64" rx="5"/>
+          <path class="lead" d="M 146 221 L 146 116"/>
+          <text x="136" y="110" class="lbl" fill="#C77400">高压箱</text>
+        </g>
+
+        <rect x="22" y="242" width="578" height="10" rx="2" fill="#48484A"/>
+        <g stroke="#3A3A3C" stroke-width="2">
+          <line x1="60" y1="242" x2="60" y2="252"/><line x1="150" y1="242" x2="150" y2="252"/>
+          <line x1="240" y1="242" x2="240" y2="252"/><line x1="330" y1="242" x2="330" y2="252"/>
+          <line x1="430" y1="242" x2="430" y2="252"/><line x1="510" y1="242" x2="510" y2="252"/>
+          <line x1="590" y1="242" x2="590" y2="252"/>
+        </g>
+
+        <!-- 车轮 -->
+        <g>
+          <g>
+            <circle cx="473" cy="303" r="32" fill="#2C2C2E"/><circle cx="543" cy="303" r="32" fill="#2C2C2E"/>
+            <circle cx="473" cy="303" r="20" fill="#3A3A3C"/><circle cx="543" cy="303" r="20" fill="#3A3A3C"/>
+          </g>
+          <g>
+            <circle cx="88" cy="300" r="32" fill="#3A3A3C"/><circle cx="470" cy="300" r="32" fill="#3A3A3C"/><circle cx="540" cy="300" r="32" fill="#3A3A3C"/>
+            <circle cx="88" cy="300" r="26" fill="none" stroke="#2C2C2E" stroke-width="3"/>
+            <circle cx="470" cy="300" r="26" fill="none" stroke="#2C2C2E" stroke-width="3"/>
+            <circle cx="540" cy="300" r="26" fill="none" stroke="#2C2C2E" stroke-width="3"/>
+            <circle cx="88" cy="300" r="14" fill="#E5E5EA"/><circle cx="470" cy="300" r="14" fill="#E5E5EA"/><circle cx="540" cy="300" r="14" fill="#E5E5EA"/>
+            <circle cx="88" cy="300" r="5" fill="#F2F2F7"/><circle cx="470" cy="300" r="5" fill="#F2F2F7"/><circle cx="540" cy="300" r="5" fill="#F2F2F7"/>
+            <g fill="#8E8E93">
+              <circle cx="88" cy="290" r="1.6"/><circle cx="96" cy="297" r="1.6"/><circle cx="94" cy="307" r="1.6"/><circle cx="82" cy="307" r="1.6"/><circle cx="80" cy="297" r="1.6"/>
+              <circle cx="470" cy="290" r="1.6"/><circle cx="478" cy="297" r="1.6"/><circle cx="476" cy="307" r="1.6"/><circle cx="464" cy="307" r="1.6"/><circle cx="462" cy="297" r="1.6"/>
+              <circle cx="540" cy="290" r="1.6"/><circle cx="548" cy="297" r="1.6"/><circle cx="546" cy="307" r="1.6"/><circle cx="534" cy="307" r="1.6"/><circle cx="532" cy="297" r="1.6"/>
+            </g>
+          </g>
+        </g>
+
+        <!-- 电驱桥 -->
+        <g class="part" data-key="eaxle">
+          <rect x="474" y="264" width="48" height="38" rx="8" fill="#EFEAFE" stroke="#5856D6" stroke-width="1.6"/>
+          <rect x="477" y="267" width="15" height="13" rx="2" fill="#fff" stroke="#5856D6" stroke-width="1"/>
+          <g stroke="#5856D6" stroke-width=".9">
+            <line x1="480" y1="270" x2="480" y2="277"/><line x1="484" y1="270" x2="484" y2="277"/><line x1="488" y1="270" x2="488" y2="277"/>
+          </g>
+          <circle cx="503" cy="283" r="11" fill="#fff" stroke="#5856D6" stroke-width="1.3"/>
+          <circle cx="503" cy="283" r="4" fill="#5856D6"/>
+          <line x1="522" y1="283" x2="534" y2="283" stroke="#8E8E93" stroke-width="3" stroke-linecap="round"/>
+          <rect class="hit" x="472" y="262" width="52" height="42" rx="8"/>
+          <rect class="outline" x="472" y="262" width="52" height="42" rx="8"/>
+          <text x="474" y="256" class="lbl" fill="#5856D6">电驱桥</text>
+        </g>
+
+        <!-- 电池架 -->
+        <g class="part" data-key="frame">
+          <rect x="224" y="244" width="166" height="10" rx="2" fill="none" stroke="#0D9488" stroke-width="2.5"/>
+          <line x1="232" y1="244" x2="232" y2="254" stroke="#0D9488" stroke-width="2"/>
+          <line x1="382" y1="244" x2="382" y2="254" stroke="#0D9488" stroke-width="2"/>
+          <line x1="307" y1="244" x2="307" y2="254" stroke="#0D9488" stroke-width="1.4" opacity=".55"/>
+          <rect class="hit" x="220" y="241" width="174" height="15"/>
+          <rect class="outline" x="220" y="241" width="174" height="15"/>
+          <path class="lead" d="M 390 249 L 393 249 L 393 280 L 398 280"/>
+          <text x="400" y="286" class="lbl" fill="#0D9488">电池架</text>
+        </g>
+
+        <!-- CTB 电池包 -->
+        <g class="part on" data-key="pack">
+          <rect x="232" y="254" width="150" height="54" rx="5" fill="url(#gP)" stroke="#007AFF" stroke-width="1.8"/>
+          <line x1="232" y1="259" x2="382" y2="259" stroke="#60A5FA" stroke-width=".8" opacity=".7"/>
+          <g fill="#93C5FD" stroke="#60A5FA" stroke-width=".7">
+            <rect x="238" y="263" width="32" height="30" rx="2"/>
+            <rect x="273" y="263" width="32" height="30" rx="2"/>
+            <rect x="308" y="263" width="32" height="30" rx="2"/>
+            <rect x="343" y="263" width="32" height="30" rx="2"/>
+          </g>
+          <g stroke="#60A5FA" stroke-width=".6" opacity=".8">
+            <line x1="248" y1="265" x2="248" y2="291"/><line x1="260" y1="265" x2="260" y2="291"/>
+            <line x1="283" y1="265" x2="283" y2="291"/><line x1="295" y1="265" x2="295" y2="291"/>
+            <line x1="318" y1="265" x2="318" y2="291"/><line x1="330" y1="265" x2="330" y2="291"/>
+            <line x1="353" y1="265" x2="353" y2="291"/><line x1="365" y1="265" x2="365" y2="291"/>
+          </g>
+          <rect x="380" y="268" width="6" height="16" rx="2" fill="#DBEAFE" stroke="#60A5FA" stroke-width=".9"/>
+          <rect x="237" y="296" width="140" height="8" rx="3" fill="#BAE6FD" stroke="#38BDF8" stroke-width="1"/>
+          <g stroke="#38BDF8" stroke-width=".9">
+            <line x1="252" y1="300" x2="258" y2="300"/><line x1="300" y1="300" x2="306" y2="300"/><line x1="348" y1="300" x2="354" y2="300"/>
+          </g>
+          <rect class="hit" x="230" y="252" width="154" height="58" rx="6"/>
+          <rect class="outline" x="230" y="252" width="154" height="58" rx="6"/>
+          <text x="230" y="320" class="lbl">CTB 电池包 · 4 模组</text>
+        </g>
+
+        <!-- 管路 / 电缆热区 -->
+        <g class="part" data-key="cool">
+          <path class="hit" d="M 40 236 L 40 268 L 242 268 L 242 278 L 372 278 L 372 292 L 68 292 L 68 236"/>
+          <path class="outline" d="M 40 236 L 40 268 L 242 268 L 242 278 L 372 278 L 372 292 L 68 292 L 68 236"/>
+        </g>
+        <g class="part" data-key="cable">
+          <path class="hit" d="M 312 280 L 312 264 L 128 264 L 121 230"/>
+          <path class="outline" d="M 312 280 L 312 264 L 128 264 L 121 230"/>
+          <path class="hit" d="M 121 230 L 121 264 L 462 264 L 490 280"/>
+          <path class="outline" d="M 121 230 L 121 264 L 462 264 L 490 280"/>
+        </g>
+
+        <path id="coolPath" d="M 40 236 L 40 268 L 242 268 L 242 278 L 372 278 L 372 292 L 68 292 L 68 236"
+              fill="none" stroke="#AEAEB2" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" opacity=".26"/>
+        <use href="#coolPath" class="coolLn sup" transform="translate(0,-3)"/>
+        <use href="#coolPath" class="coolLn ret" transform="translate(0,3)"/>
+        <g id="coolDots"></g>
+        <path id="flowA" d="M 312 280 L 312 264 L 128 264 L 121 230"
+              fill="none" stroke="#AEAEB2" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" opacity=".26"/>
+        <path id="flowB" d="M 121 230 L 121 264 L 462 264 L 490 280"
+              fill="none" stroke="#AEAEB2" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" opacity=".26"/>
+        <g id="flowDotsA"></g><g id="flowDotsB"></g>
+
+        <g id="plug" opacity="0">
+          <rect x="172" y="204" width="24" height="18" rx="3" fill="#D6E4FF" stroke="#5856D6" stroke-width="1.5"/>
+          <line x1="184" y1="208" x2="184" y2="218" stroke="#5856D6" stroke-width="1.5"/>
+        </g>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ================= 参数 ================= -->
+  <aside class="card">
+    <h2>实时运行参数<em id="runTag">行驶放电</em></h2>
+    <div class="gauges">
+      <div class="g hero" data-tipkey="gRange">
+        <div class="k">剩余续航</div>
+        <div class="v"><span id="mRange">—</span><i>km</i></div>
+        <div class="socbar"><i id="socBar" style="width:0%"></i></div>
+      </div>
+      <div class="g" data-tipkey="gSoc"><div class="k">SOC</div>
+        <div class="v"><span id="mSoc">—</span><i>%</i></div><div class="s" id="mSoc2">—</div></div>
+      <div class="g" data-tipkey="gTemp"><div class="k">电池温度</div>
+        <div class="v"><span id="mTbatt">—</span><i>℃</i></div><div class="s" id="mMode">—</div></div>
+      <div class="g" data-tipkey="gEcon"><div class="k">百公里电耗</div>
+        <div class="v"><span id="mEcon">—</span><i>kWh</i></div><div class="s">80 km/h</div></div>
+      <div class="g" data-tipkey="gCur"><div class="k">母线电流</div>
+        <div class="v"><span id="mCurrent">—</span><i>A</i></div><div class="s" id="mVolt">—</div></div>
+      <div class="g" data-tipkey="gEav"><div class="k">可用电量</div>
+        <div class="v"><span id="mEavail">—</span><i>kWh</i></div><div class="s" id="mEtaT">—</div></div>
+      <div class="g" data-tipkey="gChg"><div class="k">充电 20→80%</div>
+        <div class="v"><span id="mChgT">—</span><i>min</i></div><div class="s" id="mKmMin">—</div></div>
+      <div class="g" data-tipkey="gPile"><div class="k">实际充电功率</div>
+        <div class="v"><span id="mChgP">—</span><i>kW</i></div><div class="s" id="mPreheat">—</div></div>
+      <div class="g" data-tipkey="gMass"><div class="k">整车总重</div>
+        <div class="v"><span id="mMass">—</span><i>t</i></div><div class="s" id="mBatW">—</div></div>
+      <div class="g" data-tipkey="gCargo"><div class="k">可载货</div>
+        <div class="v"><span id="mCargo">—</span><i>t</i></div><div class="s" id="mFull">—</div></div>
+    </div>
+
+    <div class="ctrl">
+      <div class="row">
+        <label>环境温度</label>
+        <input type="range" id="temp" min="-30" max="50" value="25" step="1">
+        <span class="val"><span id="vTemp">25</span> ℃</span>
+      </div>
+      <div class="row">
+        <label>载荷</label>
+        <div class="seg" id="segLoad">
+          <button class="on" data-load="full">满载 49 t</button>
+          <button data-load="fixed">定载 25 t</button>
+        </div>
+        <label style="min-width:0">桩上限</label>
+        <div class="seg" id="segPile">
+          <button data-pile="350">350</button>
+          <button class="on" data-pile="600">600</button>
+          <button data-pile="1000">1000</button>
+        </div>
+      </div>
+      <div class="row">
+        <label class="sw"><input type="checkbox" id="tmOn" checked><span class="tg"></span>液冷机组</label>
+        <label class="sw"><input type="checkbox" id="chtc"><span class="tg"></span>CHTC 折算</label>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- ================= 控件 ================= -->
+<div class="card" style="flex:none;flex-direction:row;align-items:center;gap:12px;flex-wrap:wrap">
+  <div class="pedals">
+    <div class="ped accel" id="pedA" data-tipkey="pedAccel">
+      <div class="fill" id="fillA"></div><div class="big" id="bigA">270</div>
+      <div class="lab"><b>加速</b><span id="valA">60%</span></div>
+    </div>
+    <div class="ped brake" id="pedB" data-tipkey="pedBrake">
+      <div class="fill" id="fillB"></div><div class="big" id="bigB">0</div>
+      <div class="lab"><b>制动</b><span id="valB">0%</span></div>
+    </div>
+    <div class="ped chg" id="pedC" data-tipkey="pedChg">
+      <div class="fill" id="fillC"></div><div class="big" id="bigC">0</div>
+      <div class="lab"><b>充电</b><span id="valC">0 kW</span></div>
+    </div>
+    <div class="ped idle" id="pedI" data-tipkey="pedIdle">
+      <div class="big" id="bigI">待机</div>
+      <div class="lab"><b>松开踏板</b><span id="valI">0 kW</span></div>
+    </div>
+  </div>
+  <div class="readout">
+    <div class="k">母线功率</div>
+    <div class="v" id="powVal">+270<i>kW</i></div>
+    <div class="t" id="powTag" style="color:var(--blue)">电池放电 → 高压箱 → 电驱桥</div>
+  </div>
+  <div class="tstate circ" id="tmState">热管理：保温循环</div>
+</div>
+
+<!-- ================= 电池包 ================= -->
+<div class="packs" id="packList"></div>
+
+<details class="notes">
+  <summary>耦合模型与口径说明</summary>
+  <div class="cols">
+    <div>
+      <h4>三条耦合链</h4>
+      <ul>
+        <li><b>① 电量→续航</b>：<code>R = E可用 / C电耗</code>，一阶主链条</li>
+        <li><b>② 重量→能耗→续航</b>：<code>C滚阻 = m·g·f·1000/(3.6e6·η)</code>。满载下表现为挤占载重，定载下直接吃续航</li>
+        <li><b>③ 温度→容量+效率+充电</b>：容量保持 <code>η_T</code>、驱动效率 <code>η_drive</code>、充电倍率折减三者叠加</li>
+      </ul>
+    </div>
+    <div>
+      <h4>计算式</h4>
+      <ul>
+        <li><code>E可用 = E额定 × 0.90 × η_T</code></li>
+        <li><code>C = m·g·f·1000/(3.6e6·η) + 0.5ρ(Cd·A)v³·(3600/v)/(3.6e6·η) + P附件/v</code></li>
+        <li><code>t = 0.6·E可用 / min(E·C倍率·折减, P桩, P请求) × 窗口·门限 + t预热</code></li>
+        <li>基准：80 km/h 满载；<code>f=0.0065</code>、<code>Cd·A=3.6</code>、<code>ρ=1.2</code>、<code>η₀=0.90</code>；底盘+上装自重 15 t</li>
+        <li>热管理：制冷 10 kW / PTC 18 kW / 循环 1 kW</li>
+      </ul>
+    </div>
+    <div>
+      <h4>布置与口径</h4>
+      <ul>
+        <li>集成式机组前置进风口 + 高压箱座椅下 + 电池 CTB 车架下 → 车架上方完整留给上装</li>
+        <li>续航默认 80 km/h 满载等速（行业宣传口径）；CHTC 折算 ×0.90 贴近 GB/T 18386.2-2022</li>
+        <li>25 ℃ 满载电耗 130.6 kWh/100km，与 49 t 实测 100~125 吻合</li>
+      </ul>
+    </div>
+  </div>
+  <div class="warnbox">
+    <b>使用边界（参数口径，2026-10 与市面公布数据逐项核查锁定）：</b>
+    ① LFP 系统能量密度 160 Wh/kg = 重卡主流 140-160 上沿（CTP/CTB 结构创新，CATL 神行包 170）；三元 200 取 LG/Northvolt 重卡 NCM 包 200-220 下沿。
+    ② 固态 320 Wh/kg 取 2026 已装车商用车固态 300-380 区间下沿偏中（福田 380 / CATL-亿纬 360-380 / 三一全固态 ~315 / 长城 300），非实验室值。
+    ③ 钠电 140 = 钠新电芯 175 × 成组 ~80%；-40 ℃ 保持 90%+ 为一汽解放 J6P（339 kWh，中科海钠）实测口径，20-25 min 满充。
+    ④ 低温曲线与充电倍率折减取行业中值，实际需按电芯 DOE 标定；锂系 &lt;0 ℃ 析锂禁充、≥47 ℃ 热报警降流、≥52 ℃ 停充——可关掉液冷机组实测。
+    ⑤ 25 ℃ 满载电耗 130.6 kWh/100km，处于行业 120-150 区间（49 t 平路 1.0-1.25 kWh/km）；续航默认 80 km/h 满载等速口径。
+    ⑥ 本演示为原理级仿真，几何为示意布置，不代表任何具体产品真实结构。
+  </div>
+</details>
+
+</div>
+
+<div class="tip" id="tip"></div>
+
+<script>
+(function(){
+"use strict";
+/* ================= 数据 ================= */
+var PACKS = [
+  {key:'lfp', name:'磷酸铁锂 LFP', color:'#007AFF', E:700,  whkg:160, cchg:2.0, heat:0.100, fcLo:20, fcHi:90,
+   desc:'循环寿命长（4000-8000 次）、热稳定性好、成本低，商用车装车量最大的路线（重卡主流 282-423 kWh 包）。快充窗口 20–90%、主流 2C 连续；低温是硬伤——-20 ℃ 容量保持约 65%，充电有析锂风险，BMS 禁大倍率，必须预热。'},
+  {key:'nmc', name:'三元锂 NMC', color:'#5856D6', E:850,  whkg:200, cchg:1.8, heat:0.110, fcLo:20, fcHi:80,
+   desc:'系统能量密度约 200 Wh/kg，比 LFP 高 25%，低温衰减小（-20 ℃ 保持约 73%），适合长续航与北方线路。快充黄金窗口 20–80%，高温 + 高 SOC 衰减最快，对热管理要求最严；低温充电同样需预热防析锂。重卡装车量小于 LFP（成本与热安全权衡）。'},
+  {key:'ss', name:'全固态 ASSB', color:'#0D9488', E:1150, whkg:320, cchg:3.0, heat:0.080, fcLo:10, fcHi:90,
+   desc:'2026 年商用车固态电池已批量装车（福田 / 三一 / CATL-亿纬），系统级 300-380 Wh/kg，本演示取 320：同重量电量最大、本征安全、-30 ℃ 仍保持 90%，15 min 可补 80%。快充窗口 10–90%。成本与产能仍是约束，属量产初期。'},
+  {key:'na', name:'钠离子 Na-ion', color:'#FF9500', E:550, whkg:140, cchg:2.5, heat:0.025, fcLo:5, fcHi:100,
+   desc:'系统能量密度约 140 Wh/kg（钠新电芯 175 × 成组 ~80%）——唯一全 SOC 窗口（5–100%）快充的体系：-20 ℃ 免预热直接大倍率、温升 <5 ℃；-40 ℃ 保持 90%+（解放 J6P 339 kWh 实测 20-25 min 满充）。硬伤是能量密度低，同重量电量最小、续航最短。'}
+];
+var CURVE_T = {
+  lfp:[[-30,.55],[-20,.65],[-10,.75],[0,.85],[10,.93],[25,1],[40,1],[45,.98],[55,.94]],
+  nmc:[[-30,.62],[-20,.73],[-10,.82],[0,.89],[10,.95],[25,1],[40,.99],[45,.95],[55,.90]],
+  ss: [[-30,.86],[-20,.90],[-10,.93],[0,.95],[10,.97],[25,1],[40,1],[45,.99],[55,.96]],
+  na: [[-40,.90],[-30,.92],[-20,.93],[-10,.95],[0,.96],[10,.98],[25,1],[40,1],[45,.98],[55,.95]]
+};
+var CURVE_C = {
+  lfp:[[-30,.12],[-20,.22],[-10,.42],[0,.65],[10,.88],[25,1],[40,1],[45,.90],[55,.72]],
+  nmc:[[-30,.18],[-20,.32],[-10,.52],[0,.74],[10,.90],[25,1],[40,1],[45,.88],[55,.70]],
+  ss: [[-30,.35],[-20,.55],[-10,.70],[0,.86],[10,.94],[25,1],[40,1],[45,.92],[55,.78]],
+  na: [[-40,.50],[-30,.68],[-20,.85],[-10,.92],[0,.96],[10,.98],[25,1],[40,1],[45,.93],[55,.80]]
+};
+var PARTS = {
+  chiller:{t:'集成式液冷机组', s:'驾驶室前进风口 · 冷凝/压缩机/水泵/PTC 一体',
+    b:'集成式方案把冷凝器、压缩机、水泵、PTC 与换热/膨胀件做成单一模块，装在驾驶室前进风口后方，直接吃行车迎面风——散热效率高、不占车架上方空间，也不必为独立机组在货箱前留检修区。制冷时压缩机做功经板式换热器带走冷却液热量；低温切换 PTC 加热冷却液；常温仅水泵低流量循环均温。',
+    k:['前置迎风','压缩机 10 kW','PTC 18 kW','水泵 1 kW','目标 15~35 ℃']},
+  pdu:{t:'高压箱', s:'驾驶室座椅下方 · 高压配电与保护中枢',
+    b:'布置在座椅下方，靠近驾驶室线束入口，检修掀座椅即可触及，且完全不占车架上方空间。内含主正/主负接触器、预充继电器与预充电阻、熔断器、电流传感器、绝缘监测。上电先走预充回路给母线电容充电，避免大电流冲击；过流与短路由熔断器与 BMS 保护阈值双重兜底。',
+    k:['主正/主负接触器','预充回路','熔断器','分流器/霍尔','座椅下检修']},
+  pack:{t:'CTB 电池包', s:'车架下方 · 4 模组 · 上盖与车架集成',
+    b:'Cell-to-Body：电池上盖直接参与车架承载，取消独立箱体上盖与模组层结构，高度与零件数同时下降，系统能量密度提升。包内 4 个模组卧放于底部大面液冷板之上，配 BMS 从板与采样线束。整包吊装在车架纵梁下方，重心低、不侵占上装空间。',
+    k:['4 模组','上盖与车架集成','底部大面液冷','BMS 从板','重心低']},
+  frame:{t:'电池架 / CTB 托架', s:'承载 · 防护 · 走线',
+    b:'CTB 架构下原独立电池架简化为框架式托架：承担 PACK 安装定位、底部托底防护与碰撞传力，同时为液冷管路、动力电缆、泄压/排气通道预留走线空间。托架通过高强度螺栓与车架纵梁连接，属结构安全件。',
+    k:['框架式托架','底部防护','走线/泄压预留','与纵梁螺栓连接']},
+  cool:{t:'液冷管路', s:'前置机组 ↔ 车架下方电池包（长回路）',
+    b:'从车头前置机组沿车架纵梁敷设到车架下方的 PACK，进出液双回路，含快插接头、排气阀、膨胀水壶与流量/温度传感。关键在流阻与流量分配均匀——模组间温差过大会直接吃掉可用容量与循环寿命（目标温差 <5 ℃）。',
+    k:['进出液双回路','快插接头','均流设计','温差 <5 ℃']},
+  cable:{t:'动力电缆', s:'PACK ↔ 高压箱 ↔ 电驱桥 · 双向母线',
+    b:'PACK 出线沿车架内侧向前到座椅下方高压箱，分配后再向后到电驱桥。放电时电流由 PACK 流向电驱桥；刹车回收时方向反转，电机作发电机经逆变器整流回充电池。同一根电缆承载双向能量流。',
+    k:['双向能量流','700 V 级平台','屏蔽 + 高压互锁','载流 500 A 级']},
+  eaxle:{t:'电驱桥 e-Axle', s:'电机 + 逆变器 + 变速箱集成',
+    b:'行驶时逆变器把电池直流逆变为交流驱动电机输出扭矩；制动时电机转为发电机，逆变器整流后回充电池（能量回收），同时提供电制动扭矩，显著降低机械制动磨损，长下坡工况收益尤其明显。',
+    k:['三合一集成','驱动/发电双向','回收 ~200 kW','电制动优先']},
+  box:{t:'货箱（上装）', s:'布置优化的直接收益',
+    b:'把电池 CTB 集成到车架下方、液冷机组前置到进风口、高压箱下移到座椅下方之后，车架纵梁上方的空间被完整释放给上装——这正是这套布置相对"电池背在驾驶室后方"或"电池挂车架两侧"方案的核心优势：不牺牲货箱容积与装载长度。',
+    k:['上装空间完整保留','不牺牲装载长度','重心低利于操稳']},
+  cab:{t:'驾驶室与整车', s:'49 t 满载限值约束',
+    b:'整车按 49 t 总重限值：底盘与上装自重合计 15 t，剩余为电池与货物。电池越重可载货越少——这是商用车选电池包时最容易被忽略的经济性账，需在"续航"与"载重"之间取舍。',
+    k:['49 t 总重限值','自重 15 t','80 km/h 巡航','Cd·A ≈ 3.6 m²']}
+};
+var TIPS = {
+  howto:{t:'怎么玩', s:'',
+    b:'① 拖动 <b>加速</b>（蓝）或 <b>制动</b>（绿）踏板控制驱动/回收强度；② 拖动 <b>充电</b>（紫）踏板直接选择充电功率；③ 点 <b>待机</b>（灰）松开所有踏板；④ 拖温度滑块看热管理三态切换，也可关掉机组看电池温度漂移；⑤ 点下方电池包切换体系，电量/重量/续航/充电全部联动；⑥ 电池包卡片"窗口"条是该体系快充 SOC 窗口，黑点是当前 SOC。鼠标悬停任意部件或数字都有说明。',
+    k:[]},
+  pedAccel:{t:'加速踏板', s:'0~100% → 放电功率 0~450 kW',
+    b:'踩得越深，母线放电功率越大、电池发热越多。热管理会随之上门：温升超过 35 ℃ 自动切制冷。', k:[]},
+  pedBrake:{t:'制动踏板', s:'0~100% → 回收功率 0~-200 kW',
+    b:'电制动优先：电机作发电机回充电池，同时提供制动扭矩，可显著减少机械制动磨损。能量流粒子反向。', k:[]},
+  pedChg:{t:'充电踏板', s:'拖动直接选择充电功率（受桩上限、SOC 窗口与电池倍率限制）',
+    b:'请求功率 = 踏板深度 × 桩上限。实际功率取四者最小值：请求值、桩上限、电池当前温度允许的倍率、当前 SOC 所在窗口的收流系数。锂系（LFP/三元/固态）低于 0 ℃ 触发析锂禁充，需预热；钠电全窗口免预热。快充产热实时累积——关掉液冷机组，锂系很快热报警降流，钠电温升 <5 ℃ 基本无感。', k:[]},
+  pedIdle:{t:'待机', s:'松开所有踏板 = 车辆静止',
+    b:'动力输出归零，仅液冷机组等附件耗电，SOC 极缓慢下降。', k:[]},
+  gRange:{t:'剩余续航', s:'按当前 SOC · 温度 · 载荷 · 工况实时估算',
+    b:'= 满电续航 × SOC。默认口径为 80 km/h 满载等速；勾选 CHTC 后按中国重型商用车工况折算（×0.90，贴近 GB/T 18386.2-2022）。', k:[]},
+  gSoc:{t:'荷电状态 SOC', s:'仿真按 1 秒 = 1 分钟积分',
+    b:'放电/回收功率对可用电量积分得到，可在 2%~100% 之间循环。', k:[]},
+  gTemp:{t:'电池温度', s:'状态量：随产热/漏热实时演化',
+    b:'拖动环境温度滑块按"车辆冷浸一夜"处理——电池温度直接等于环境温度。机组开启时温控在 17~33 ℃：超 33 制冷（液冷回路 ~70 kW 换热）、低于 17 走 PTC（18 kW）、其间仅循环。关闭机组后温度按工况产热与自然漏热漂移——快充很快热报警，低温则禁充。', k:[]},
+  gEcon:{t:'百公里电耗', s:'滚阻 + 风阻 + 附件功耗',
+    b:'C = m·g·f·1000/(3.6e6·η) + 0.5ρ(Cd·A)v³·(3600/v)/(3.6e6·η) + P附件/v。整车越重、温度越极端，电耗越高。', k:[]},
+  gCur:{t:'母线电流', s:'I = P / U，U 随 SOC 浮动（约 620~750 V）',
+    b:'700 V 级平台典型值。电流是载流截面与温升设计的直接依据。', k:[]},
+  gEav:{t:'可用电量', s:'= 额定 × 0.90（SOC 窗口）× 温度保持率',
+    b:'行业预留 5-10% 不用，取 0.90。温度保持率由各化学体系曲线决定（2026-10 核查锁定）：钠电 -20 ℃ 93% / -40 ℃ 90%+（解放 J6P 实测）最优，固态 -30 ℃ 90%（三一 CATL），三元 73%，LFP 65% 衰减最大。', k:[]},
+  gChg:{t:'充电 20%→80%', s:'取请求功率、桩上限、温度倍率、SOC 窗口四者最小值',
+    b:'按 20%→80% 口径估算。各体系快充窗口：LFP 20–90%、三元 20–80%、固态 10–90%、钠电 5–100%（全窗口）。低于 0 ℃ 锂系触发析锂禁充需预热（钠电免）；SOC 高出窗口后按体系收流。', k:[]},
+  gPile:{t:'实际充电功率', s:'min(请求, 桩上限, 温度倍率, SOC 窗口) × 报警/禁充门限',
+    b:'电池能"吃"多少与桩能"给"多少是两条线，实际功率永远取较小者。低于 0 ℃ 锂系被 BMS 限到涓流（析锂保护）；电池 ≥47 ℃ 热报警降流至 30%，≥52 ℃ 停止充电。', k:[]},
+  gMass:{t:'整车总重', s:'满载模式固定 49 t；定载模式 = 15 + 25 + 电池重',
+    b:'满载模式下电池增重表现为挤占载重；定载模式下直接推高电耗、吃掉续航。', k:[]},
+  gCargo:{t:'可载货重量', s:'= 49 t − 底盘与上装自重 − 电池包重量',
+    b:'同样电量下，系统能量密度越高，能腾出来的货越多——这是商用车选电池包的隐性收益。', k:[]}
+};
+
+/* ================= 状态 ================= */
+var S = {pack:'lfp', mode:'drive', thr:60, chg:0, temp:25, load:'full', pile:600,
+         tmOn:true, chtc:false, soc:88, part:'pack', tb:25};
+var TRUCK = {base:15, cargoFixed:25, limit:49, f:0.0065, cdA:3.6, rho:1.2, v:80, eta0:0.90, g:9.81};
+var VMS = TRUCK.v/3.6;
+
+/* ================= 工具 ================= */
+function $(id){return document.getElementById(id);}
+function interp(tb,t){
+  if(t<=tb[0][0]) return tb[0][1];
+  if(t>=tb[tb.length-1][0]) return tb[tb.length-1][1];
+  for(var i=0;i<tb.length-1;i++){
+    if(t>=tb[i][0] && t<=tb[i+1][0]){
+      var r=(t-tb[i][0])/(tb[i+1][0]-tb[i][0]);
+      return tb[i][1]+r*(tb[i+1][1]-tb[i][1]);
+    }
+  }
+  return 1;
+}
+function clamp(v,a,b){return v<a?a:(v>b?b:v);}
+function pack(){for(var i=0;i<PACKS.length;i++){if(PACKS[i].key===S.pack)return PACKS[i];}return PACKS[0];}
+function massOf(p){return p.E/p.whkg;}
+
+/* ================= 模型 ================= */
+/* 电池温度为状态量：产热（驱动/回收/充电）与温控/漏热的实时平衡 */
+function thermalStep(pk, dtMin, pChg){
+  var Ck = massOf(pk)*1000*950/3.6e6;            // kWh/K 整包热容
+  var q = 0;
+  if(S.mode==='drive')       q += Math.abs(S.thr)/100*450*0.030;
+  else if(S.mode==='brake')  q += Math.abs(S.thr)/100*200*0.050;
+  else if(S.mode==='charge') q += pChg*pk.heat;   // 充电热损（钠电约为锂系 1/3，5C 温升<5K）
+  var rm;
+  if(S.tmOn){
+    if(S.tb > 33)      rm = 70;                    // 制冷：热泵 + 液冷回路换热能力
+    else if(S.tb < 17) rm = -18;                   // PTC 加热 18 kW
+    else               rm = 0.06*Ck*(S.tb-S.temp); // 循环 + 液冷回路漏热
+  }else{
+    rm = 0.045*Ck*(S.tb-S.temp);                   // 自然对流
+  }
+  S.tb = clamp(S.tb + (q-rm)/Ck*dtMin/60, S.temp-3, 58);   // (q-rm)/Ck 为 K/小时
+}
+function thermalState(){
+  var mode, p;
+  if(!S.tmOn){ mode='off'; p=0; }
+  else if(S.tb > 33){ mode='cool'; p=10; }
+  else if(S.tb < 17){ mode='heat'; p=18; }
+  else { mode='circ'; p=1; }
+  return {mode:mode, p:p, tb:S.tb};
+}
+/* 快充 SOC 窗口收流系数：窗口外降功率，钠电全窗口 */
+function socWin(pk, soc){
+  if(pk.key==='na') return soc<5 ? clamp(0.4+0.6*soc/5,0.4,1) : 1;
+  var f = 1;
+  if(soc < pk.fcLo) f = 0.25+0.75*(soc/pk.fcLo);
+  if(soc > pk.fcHi) f = Math.min(f, 0.25+0.75*(100-soc)/(100-pk.fcHi));
+  return clamp(f, 0.25, 1);
+}
+function compute(pk, opt){
+  opt = opt||{};
+  var std = !!opt.std;
+  var mode = std ? 'drive' : S.mode;
+  var thr  = std ? 60 : S.thr;
+  var soc  = opt.soc!=null ? opt.soc : S.soc;
+  var th = thermalState();
+  var Tb = th.tb;
+
+  var etaT = interp(CURVE_T[pk.key], Tb);
+  var Eavail = pk.E*0.90*etaT;
+  var mb = massOf(pk);
+  var cargo, mTot;
+  if(S.load==='full'){ mTot = TRUCK.limit; cargo = TRUCK.limit - TRUCK.base - mb; }
+  else { cargo = TRUCK.cargoFixed; mTot = TRUCK.base + TRUCK.cargoFixed + mb; }
+
+  var etaD = TRUCK.eta0*(1 - clamp(15-Tb,0,40)*0.004);
+  var roll = (mTot*1000*TRUCK.g*TRUCK.f)*1000/3.6e6/etaD;
+  var air  = (0.5*TRUCK.rho*TRUCK.cdA*Math.pow(VMS,3))*(3600/TRUCK.v)/3.6e6/etaD;
+  var aux  = th.p/TRUCK.v;
+  var Ckm  = roll+air+aux;
+  var range = Eavail/Ckm;
+  if(S.chtc) range *= 0.90;
+
+  /* ---- 充电能力：四重限制 + 两类保护门限 ---- */
+  var derate = interp(CURVE_C[pk.key], Tb);        // 低温倍率折减
+  var win    = socWin(pk, soc);                    // SOC 窗口收流
+  var cold   = (Tb < 0 && pk.key!=='na');          // 析锂禁充（钠电豁免）
+  var hot    = S.tb >= 47;                         // 热报警降流
+  var hotStop= S.tb >= 52;                         // 热报警停充
+  var gate = hotStop ? 0 : (hot ? 0.30 : 1);
+  if(cold) gate = Math.min(gate, 0.12);
+  var Preq = S.chg/100*S.pile;                     // 踏板请求功率
+  var Pbatt = pk.E*pk.cchg*derate;                 // 电池当前温度允许的倍率上限
+  var PchgMax = Math.min(Pbatt, S.pile)*win*gate;  // 当前实际能力上限
+  var Pchg = Math.min(Preq, PchgMax);              // 实际功率（充电模式）
+  var preheat = (Tb<0 && pk.key!=='na') ? Math.max(0,15-Tb)*3.8 : 0;
+  /* 充电时间预估：冷态按"预热 + 回暖后速率"，热报警按降流后可达速率 */
+  var tchg;
+  if(cold){
+    var eta15 = interp(CURVE_T[pk.key], 15);
+    var rateAfter = Math.min(pk.E*pk.cchg*interp(CURVE_C[pk.key],15), S.pile)*win;
+    tchg = rateAfter>0 ? (0.6*pk.E*0.9*eta15/rateAfter*60 + preheat) : Infinity;
+  }else{
+    var rateEst = Math.min(Pbatt, S.pile)*win*(hotStop?0.30:1);
+    tchg = rateEst>0 ? 0.6*Eavail/rateEst*60 : Infinity;
+  }
+
+  var P=0, U=620+soc*1.3;
+  if(mode==='charge') P = Pchg;
+  else if(mode==='drive') P = thr/100*450;
+  else if(mode==='brake') P = -Math.abs(thr)/100*200;
+  else P = 0;
+
+  return {pk:pk, Eavail:Eavail, etaT:etaT, mb:mb, cargo:cargo, mTot:mTot,
+          Ckm:Ckm, range:range, Pchg:Pchg, PchgMax:PchgMax, Preq:Preq, Pbatt:Pbatt, tchg:tchg,
+          preheat:preheat, th:th, Tb:Tb, P:P, U:U, I:P*1000/U,
+          derate:derate, win:win, cold:cold, hot:hot, hotStop:hotStop, mode:mode, thr:thr};
+}
+
+/* ================= tooltip ================= */
+var tipEl = $('tip');
+function tipOf(el){
+  var k = el.getAttribute && el.getAttribute('data-tipkey');
+  if(k && TIPS[k]) return TIPS[k];
+  var pk = el.getAttribute && el.getAttribute('data-key');
+  if(pk){
+    for(var i=0;i<PACKS.length;i++) if(PACKS[i].key===pk) return {t:PACKS[i].name, s:'', b:PACKS[i].desc, k:[]};
+    if(PARTS[pk]) return PARTS[pk];
+  }
+  return null;
+}
+function showTip(d, x, y){
+  if(!d){ return; }
+  tipEl.innerHTML = '<b>'+d.t+'</b>'+(d.s?'<em>'+d.s+'</em>':'')+'<div>'+d.b+'</div>'+
+    (d.k&&d.k.length?'<div class="spec">'+d.k.map(function(s){return '<span>'+s+'</span>';}).join('')+'</div>':'');
+  tipEl.classList.add('on');
+  var w=tipEl.offsetWidth, h=tipEl.offsetHeight;
+  tipEl.style.left = clamp(x+14, 8, innerWidth-w-8)+'px';
+  tipEl.style.top  = clamp(y-h-12, 8, innerHeight-h-8)+'px';
+}
+function hideTip(){ tipEl.classList.remove('on'); }
+document.addEventListener('mouseover', function(e){
+  var el = e.target.closest && e.target.closest('[data-tipkey],[data-key]');
+  if(el) showTip(tipOf(el), e.clientX, e.clientY);
+});
+document.addEventListener('mousemove', function(e){
+  if(!tipEl.classList.contains('on')) return;
+  var w=tipEl.offsetWidth, h=tipEl.offsetHeight;
+  tipEl.style.left = clamp(e.clientX+14, 8, innerWidth-w-8)+'px';
+  tipEl.style.top  = clamp(e.clientY-h-12, 8, innerHeight-h-8)+'px';
+});
+document.addEventListener('mouseout', function(e){
+  var from = e.target.closest && e.target.closest('[data-tipkey],[data-key]');
+  var to   = e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('[data-tipkey],[data-key]');
+  if(from && from===to) return;
+  if(from) hideTip();
+});
+document.addEventListener('click', function(e){
+  var el = e.target.closest && e.target.closest('[data-tipkey],[data-key]');
+  if(el){ var r=el.getBoundingClientRect(); showTip(tipOf(el), r.left+r.width/2, r.bottom); }
+  else hideTip();
+});
+
+/* ================= 渲染 ================= */
+function renderPacks(){
+  var host=$('packList'); host.innerHTML='';
+  var rs = PACKS.map(function(p){return compute(p,{std:true});});
+  var mxR = Math.max.apply(null, rs.map(function(r){return r.range;}));
+  var mxT = Math.max.apply(null, rs.map(function(r){return isFinite(r.tchg)?r.tchg:1;}));
+  rs.forEach(function(m){
+    var p=m.pk;
+    var el=document.createElement('div');
+    el.className='pk'+(p.key===S.pack?' on':'');
+    el.setAttribute('data-key',p.key);
+    el.style.color=p.color;
+    el.innerHTML =
+      '<div class="nm"><span class="dot"></span>'+p.name+'</div>'+
+      '<div class="kv"><span>'+p.E+' kWh · '+p.whkg+' Wh/kg</span><b>'+massOf(p).toFixed(2)+' t</b></div>'+
+      '<div class="mini"><span>续航</span><div class="mt"><i style="width:'+(m.range/mxR*100)+
+        '%"></i></div><b>'+m.range.toFixed(0)+' km</b></div>'+
+      '<div class="mini i2"><span>充电</span><div class="mt"><i style="width:'+
+        (isFinite(m.tchg)?(m.tchg/mxT*100):0)+'%"></i></div><b>'+
+        (isFinite(m.tchg)?m.tchg.toFixed(0)+' min':'—')+'</b></div>'+
+      '<div class="mini"><span>窗口</span><div class="mt win"><i style="left:'+p.fcLo+'%;width:'+(p.fcHi-p.fcLo)+
+        '%"></i><u class="tick" style="left:'+S.soc+'%"></u></div><b>'+p.fcLo+'–'+p.fcHi+'%</b></div>';
+    el.onclick=function(){ S.pack=p.key; renderAll(); };
+    host.appendChild(el);
+  });
+}
+function renderPart(){
+  document.querySelectorAll('.part').forEach(function(g){
+    g.classList.toggle('on', g.getAttribute('data-key')===S.part);
+  });
+}
+function renderGauges(){
+  var m = compute(pack());
+  $('mRange').textContent  = (m.range*(S.soc/100)).toFixed(0);
+  $('mSoc').textContent    = S.soc.toFixed(1);
+  $('mSoc2').textContent   = '满电 '+m.range.toFixed(0)+' km';
+  $('mTbatt').textContent  = m.Tb.toFixed(1);
+  $('mMode').textContent   = m.th.mode==='cool'?'制冷':(m.th.mode==='heat'?'PTC 制热':(m.th.mode==='circ'?'保温循环':'机组关闭'));
+  $('mEcon').textContent   = (m.Ckm*100).toFixed(1);
+  $('mCurrent').textContent= m.I.toFixed(0);
+  $('mVolt').textContent   = m.U.toFixed(0)+' V';
+  $('mEavail').textContent = m.Eavail.toFixed(0);
+  $('mEtaT').textContent   = '容量保持 '+(m.etaT*100).toFixed(0)+'%';
+  $('mChgT').textContent   = isFinite(m.tchg)? m.tchg.toFixed(0) : '—';
+  $('mKmMin').textContent  = (isFinite(m.tchg)&&m.tchg>0)? (m.range/m.tchg).toFixed(1)+' km/min' : '—';
+  $('mChgP').textContent   = (S.mode==='charge'? m.Pchg : m.PchgMax).toFixed(0);
+  var chging = (S.mode==='charge');
+  if(m.cold && chging){
+    $('mPreheat').textContent = S.tmOn ? '预热中 · PTC 拉温后恢复' : '禁充 · 需预热';
+  }
+  else if(m.preheat>0){ $('mPreheat').textContent = '含预热 '+m.preheat.toFixed(0)+' min'; }
+  else if(chging && m.pk.key==='na' && m.Tb<5){ $('mPreheat').textContent = '钠电免预热'; }
+  else { $('mPreheat').textContent = chging ? '正在充电' : '最大可用功率'; }
+  $('mMass').textContent   = m.mTot.toFixed(2);
+  $('mBatW').textContent   = '电池 '+m.mb.toFixed(2)+' t';
+  $('mCargo').textContent  = m.cargo.toFixed(2);
+  $('mFull').textContent   = S.load==='full'?'满载 49 t':'定载 25 t';
+  $('socBar').style.width  = S.soc+'%';
+
+  var pv=$('powVal'), pt=$('powTag');
+  if(S.mode==='charge'){
+    pv.innerHTML='+'+m.Pchg.toFixed(0)+'<i>kW</i>';
+    pv.style.color=pt.style.color='var(--indigo)';
+    pt.textContent='充电枪 → 高压箱 → PACK（请求 '+m.Preq.toFixed(0)+' kW）';
+  } else if(S.mode==='brake'){
+    pv.innerHTML=m.P.toFixed(0)+'<i>kW</i>';
+    pv.style.color=pt.style.color='var(--green)';
+    pt.textContent='能量回收 · 车轮 → 电驱桥 → PACK';
+  } else if(S.mode==='drive' && S.thr>0){
+    pv.innerHTML='+'+m.P.toFixed(0)+'<i>kW</i>';
+    pv.style.color=pt.style.color='var(--blue)';
+    pt.textContent='电池放电 → 高压箱 → 电驱桥';
+  } else {
+    pv.innerHTML='0<i>kW</i>';
+    pv.style.color=pt.style.color='var(--gray)';
+    pt.textContent='待机 · 仅热管理附件耗电';
+  }
+  $('plug').setAttribute('opacity', S.mode==='charge'?1:0);
+
+  var t=$('tmState'), mm=m.th.mode, chging=(S.mode==='charge');
+  if(chging && m.hotStop){ t.className='tstate alarm';
+    t.textContent='充电热报警：电池 '+m.Tb.toFixed(1)+' ℃ ≥52 · BMS 已停止充电，请开启液冷机组'; }
+  else if(chging && m.hot){ t.className='tstate alarm';
+    t.textContent='充电热报警：电池 '+m.Tb.toFixed(1)+' ℃ ≥47 · BMS 降流至 30%，高温快充加速衰减'; }
+  else if(chging && m.cold){ t.className='tstate alarm';
+    t.textContent = S.tmOn
+      ? '低温预热中：电池 '+m.Tb.toFixed(1)+' ℃ <0 · PTC 拉温后自动恢复快充（锂系析锂保护）'
+      : '低温禁充：电池 '+m.Tb.toFixed(1)+' ℃ <0 · 析锂风险，BMS 限流涓充——请开热管理，钠电无此限制'; }
+  else if(chging && m.pk.key==='na' && m.Tb<10){ t.className='tstate good';
+    t.textContent='钠电免预热：电池 '+m.Tb.toFixed(1)+' ℃ 直接快充 '+m.Pchg.toFixed(0)+' kW，全程温升 <6 ℃，热管理可精简'; }
+  else if(mm==='cool'){ t.className='tstate cool';
+    t.textContent='制冷：压缩机 + 水泵高速，电池 '+m.Tb.toFixed(1)+' ℃ → 目标 33 ℃，附件 10 kW'; }
+  else if(mm==='heat'){ t.className='tstate heat';
+    t.textContent='PTC 制热：'+S.temp+' ℃ 环境下电池 '+m.Tb.toFixed(1)+' ℃，容量保持 '+(m.etaT*100).toFixed(0)+'%，附件 18 kW'; }
+  else if(mm==='circ'){ t.className='tstate circ';
+    t.textContent='保温循环：电池 '+m.Tb.toFixed(1)+' ℃ 处于 17~33 ℃ 区间，仅水泵低流量均温（1 kW）'; }
+  else { t.className='tstate off';
+    var ex = m.Tb>45 ? '注意：高温无制冷虽省下约 10 kW 附件功耗，但会触发 BMS 限功率，实车不允许长期如此。'
+           : (m.Tb<0 ? '注意：此时充电将触发析锂禁充（钠电除外）。' : '');
+    t.textContent='热管理已关闭：电池 '+m.Tb.toFixed(1)+' ℃，容量保持 '+(m.etaT*100).toFixed(0)+'%。'+ex; }
+
+  document.querySelectorAll('.pk .tick').forEach(function(u){ u.style.left=S.soc+'%'; });
+  $('runTag').textContent = S.mode==='charge'?'充电':(S.mode==='brake'?'制动回收':((S.mode==='drive'&&S.thr>0)?'行驶放电':'待机'));
+}
+function renderAll(){ renderPacks(); renderGauges(); renderPart(); }
+
+/* ================= 四控件 ================= */
+function paint(){
+  var a=(S.mode==='drive')?S.thr:0;
+  var b=(S.mode==='brake')?Math.abs(S.thr):0;
+  var c=(S.mode==='charge')?S.chg:0;
+  $('fillA').style.height=a+'%'; $('fillB').style.height=b+'%'; $('fillC').style.height=c+'%';
+  $('bigA').textContent=Math.round(a/100*450);
+  $('bigB').textContent=Math.round(b/100*200);
+  $('bigC').textContent=Math.round(c/100*S.pile);
+  $('bigA').classList.toggle('wt', a>52);
+  $('bigB').classList.toggle('wt', b>52);
+  $('bigC').classList.toggle('wt', c>52);
+  $('valA').textContent=a+'%';
+  $('valB').textContent=b+'%';
+  $('valC').textContent=Math.round(c/100*S.pile)+' kW';
+  $('bigI').textContent='待机';
+  $('valI').textContent=(S.mode==='coast')?'已松开':'—';
+  $('pedA').classList.toggle('act', a>0);
+  $('pedB').classList.toggle('act', b>0);
+  $('pedC').classList.toggle('act', c>0);
+  $('pedI').classList.toggle('act', S.mode==='coast');
+}
+function bindPed(el, type){
+  var set=function(e){
+    var r=el.getBoundingClientRect();
+    var v=Math.round(clamp((r.bottom-e.clientY)/r.height,0,1)*100);
+    if(type==='accel'){ S.mode = v>0?'drive':'coast'; S.thr=v; }
+    else if(type==='brake'){ S.mode = v>0?'brake':'coast'; S.thr=-v; }
+    else { S.mode='charge'; S.chg=v; }
+    paint(); renderAll();
+  };
+  el.addEventListener('pointerdown',function(e){ el.setPointerCapture(e.pointerId); set(e); e.preventDefault(); });
+  el.addEventListener('pointermove',function(e){ if(e.buttons) set(e); });
+}
+bindPed($('pedA'),'accel'); bindPed($('pedB'),'brake'); bindPed($('pedC'),'charge');
+$('pedI').addEventListener('click',function(){
+  S.mode='coast'; S.thr=0; S.chg=0; paint(); renderAll();
+});
+
+/* ================= 粒子 ================= */
+function mkDots(host,n,r){
+  host.innerHTML=''; var a=[];
+  for(var i=0;i<n;i++){
+    var c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.setAttribute('r',r); c.setAttribute('fill','#AEAEB2');
+    host.appendChild(c); a.push({el:c,t:i/n});
+  }
+  return a;
+}
+var dotsA=mkDots($('flowDotsA'),14,3.6), dotsB=mkDots($('flowDotsB'),22,3.6);
+var dotsC=mkDots($('coolDots'),24,3.2);
+var pA=$('flowA'), pB=$('flowB'), pC=$('coolPath');
+var lA=pA.getTotalLength(), lB=pB.getTotalLength(), lC=pC.getTotalLength();
+var COOL_COLOR={cool:'#007AFF', heat:'#FF9500', circ:'#34C759', off:'#AEAEB2'};
+
+var last=performance.now();
+/* 单帧推进：dtMin = 仿真分钟（1 秒实时 = 1 分钟仿真） */
+function stepFrame(dtMin){
+  var m=compute(pack());
+  thermalStep(pack(), dtMin, m.Pchg);   // 产热按实际充电功率
+  var netP = (S.mode==='charge') ? m.Pchg : (-m.P - m.th.p);
+  S.soc = clamp(S.soc + netP/m.Eavail*(1/60)*100*dtMin, 2, 100);
+  if(S.mode==='charge' && S.soc>=99.6){ S.mode='coast'; S.chg=0; paint(); }
+  if(S.mode!=='charge' && S.soc<=2.2){ S.mode='coast'; S.thr=0; paint(); }
+  return m;
+}
+function loop(now){
+  var dt=Math.min((now-last)/1000,0.05); last=now;
+  var m=stepFrame(dt);
+
+  var back=(S.mode==='brake'||S.mode==='charge');
+  var cap = S.mode==='charge'? S.pile : (S.mode==='brake'?200:450);
+  var ratio=Math.min(Math.abs(m.P)/cap,1);
+  var spd=(S.mode==='coast')?0:(0.06+0.13*ratio);
+  var col=back?'#34C759':'#007AFF';
+  var dir=back?-1:1, L=lA+lB;
+  [[dotsA,lA,pA,spd*L/lA],[dotsB,lB,pB,spd*L/lB]].forEach(function(g){
+    g[0].forEach(function(d){
+      d.t += g[3]*dt*dir;
+      if(d.t>1) d.t-=1; if(d.t<0) d.t+=1;
+      var pt=g[2].getPointAtLength(d.t*g[1]);
+      d.el.setAttribute('cx',pt.x); d.el.setAttribute('cy',pt.y);
+      d.el.setAttribute('fill',col);
+      d.el.setAttribute('opacity', spd===0?0.22:0.95);
+    });
+  });
+
+  var cs=m.th.mode==='off'?0:(m.th.mode==='circ'?0.05:0.13);
+  var cc=COOL_COLOR[m.th.mode];
+  dotsC.forEach(function(d){
+    d.t += cs*dt; if(d.t>1) d.t-=1;
+    var pt=pC.getPointAtLength(d.t*lC);
+    d.el.setAttribute('cx',pt.x); d.el.setAttribute('cy',pt.y);
+    d.el.setAttribute('fill',cc);
+    d.el.setAttribute('opacity', cs===0?0.22:0.9);
+  });
+
+  renderGauges();
+  requestAnimationFrame(loop);
+}
+
+/* ================= 其它交互 ================= */
+$('temp').oninput=function(){ S.temp=parseInt(this.value,10); S.tb=S.temp;   // 冷浸假设：车辆已适应环境温度
+  $('vTemp').textContent=S.temp; renderAll(); };
+document.querySelectorAll('[data-load]').forEach(function(b){
+  b.onclick=function(){
+    S.load=b.getAttribute('data-load');
+    document.querySelectorAll('#segLoad button').forEach(function(x){
+      x.className=(x.getAttribute('data-load')===S.load)?'on':'';
+    });
+    renderAll();
+  };
+});
+document.querySelectorAll('[data-pile]').forEach(function(b){
+  b.onclick=function(){
+    S.pile=parseInt(b.getAttribute('data-pile'),10);
+    document.querySelectorAll('#segPile button').forEach(function(x){
+      x.className=(parseInt(x.getAttribute('data-pile'),10)===S.pile)?'on':'';
+    });
+    paint(); renderAll();
+  };
+});
+$('tmOn').onchange=function(){ S.tmOn=this.checked; renderAll(); };
+$('chtc').onchange=function(){ S.chtc=this.checked; renderAll(); };
+document.querySelectorAll('.part').forEach(function(g){
+  g.addEventListener('click',function(){
+    S.part=g.getAttribute('data-key'); renderPart();
+  });
+});
+
+/* ================= 启动 ================= */
+paint(); renderAll();
+requestAnimationFrame(loop);
+
+/* 调试/自动化测试钩子：确定性推进仿真（不依赖 rAF） */
+window.__sim = {
+  S:S, PACKS:PACKS, TRUCK:TRUCK,
+  step:function(sec){
+    var n=Math.max(1,Math.round(sec*60));
+    for(var i=0;i<n;i++) stepFrame(1/60);
+    renderGauges(); renderPacks(); paint();
+    return {tb:S.tb, soc:S.soc, mode:S.mode};
+  }
+};
+})();
+</script>
+</body>
+</html>
