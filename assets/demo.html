@@ -603,6 +603,15 @@ var CURVE_C = {
   ss: [[-30,.35],[-20,.55],[-10,.70],[0,.86],[10,.94],[25,1],[40,1],[45,.92],[55,.78]],
   na: [[-40,.016],[-30,.024],[-20,.04],[-10,.08],[0,.24],[10,.60],[25,1],[40,1],[45,.93],[55,.80]]
 };
+/* 放电功率保持率：低温下"能放出多少电"（容量）与"能放出多快"（功率）是两种能力。
+   脉冲功率衰减远比容量保持陡——这是低温放电的真正瓶颈。行业中值口径，需按电芯 DOE 标定。
+   依据：钠电 −20℃ 1C 可用能量与 C/2 相当（高倍率自加热，中科海钠电芯实测）；锂系功率衰减比容量保持更狠。 */
+var CURVE_P = {
+  lfp:[[-40,.12],[-30,.25],[-20,.50],[-10,.72],[0,.88],[10,.96],[25,1],[40,1],[45,.98],[55,.94]],
+  nmc:[[-40,.15],[-30,.30],[-20,.55],[-10,.75],[0,.90],[10,.97],[25,1],[40,1],[45,.97],[55,.92]],
+  ss: [[-40,.50],[-30,.60],[-20,.78],[-10,.88],[0,.94],[10,.97],[25,1],[40,1],[45,.99],[55,.96]],
+  na: [[-40,.55],[-30,.70],[-20,.80],[-10,.88],[0,.94],[10,.98],[25,1],[40,1],[45,.98],[55,.95]]
+};
 var PARTS = {
   chiller:{t:'集成式液冷机组', s:'驾驶室前进风口 · 冷凝/压缩机/水泵/PTC 一体',
     b:'集成式方案把冷凝器、压缩机、水泵、PTC 与换热/膨胀件做成单一模块，装在驾驶室前进风口后方，直接吃行车迎面风——散热效率高、不占车架上方空间，也不必为独立机组在货箱前留检修区。制冷时压缩机做功经板式换热器带走冷却液热量；低温切换 PTC 加热冷却液；常温仅水泵低流量循环均温。',
@@ -636,8 +645,8 @@ var TIPS = {
   howto:{t:'怎么玩', s:'',
     b:'① 拖动 <b>加速</b>（蓝）或 <b>制动</b>（绿）踏板控制驱动/回收强度；② 拖动 <b>充电</b>（紫）踏板直接选择充电功率；③ 点 <b>待机</b>（灰）松开所有踏板；④ 拖温度滑块看热管理三态切换，也可关掉机组看电池温度漂移；⑤ 点下方电池包切换体系，电量/重量/续航/充电全部联动；⑥ 电池包卡片"窗口"条是该体系快充 SOC 窗口，黑点是当前 SOC。鼠标悬停任意部件或数字都有说明。',
     k:[]},
-  pedAccel:{t:'加速踏板', s:'0~100% → 放电功率 0~450 kW',
-    b:'踩得越深，母线放电功率越大、电池发热越多。热管理会随之上门：温升超过 35 ℃ 自动切制冷。', k:[]},
+  pedAccel:{t:'加速踏板', s:'0~100% → 放电功率 0~450 kW（低温按功率保持率折减）',
+    b:'踩得越深，母线放电功率越大、电池发热越多。热管理会随之上门：温升超过 35 ℃ 自动切制冷。低温（<0 ℃）没有析锂这类安全门限，但功率保持率随温度下降——内阻升高，同一脚踏板只有额定的一部分功率；大倍率放电的自产热又会把电池暖回来，功率随之恢复。', k:[]},
   pedBrake:{t:'制动踏板', s:'0~100% → 回收功率 0~-200 kW',
     b:'电制动优先：电机作发电机回充电池，同时提供制动扭矩，可显著减少机械制动磨损。能量流粒子反向。', k:[]},
   pedChg:{t:'充电踏板', s:'拖动直接选择充电功率（受桩上限、SOC 窗口与电池倍率限制）',
@@ -785,16 +794,17 @@ function compute(pk, opt){
   }
 
   var P=0, U=620+soc*1.3;
+  var derateP = interp(CURVE_P[pk.key], Tb);         // 低温放电功率保持率（无安全门限，只折功率）
   if(mode==='charge') P = Pchg;
-  else if(mode==='drive') P = thr/100*450;
-  else if(mode==='brake') P = -Math.abs(thr)/100*200;
+  else if(mode==='drive') P = thr/100*450*derateP;   // 放电：踏板请求 × 功率保持率
+  else if(mode==='brake') P = -Math.abs(thr)/100*200*derateP;  // 回收同样受低温内阻限制
   else P = 0;
 
   return {pk:pk, Eavail:Eavail, etaT:etaT, mb:mb, cargo:cargo, mTot:mTot,
           Ckm:Ckm, range:range, Pchg:Pchg, PchgMax:PchgMax, Preq:Preq, Pbatt:Pbatt, tchg:tchg,
           preheat:preheat, preheatTgt:preheatTgt, lockCharge:lockCharge, needWarm:needWarm,
           th:th, Tb:Tb, P:P, U:U, I:P*1000/U,
-          derate:derate, win:win, cold:cold, hot:hot, hotStop:hotStop, mode:mode, thr:thr};
+          derate:derate, derateP:derateP, win:win, cold:cold, hot:hot, hotStop:hotStop, mode:mode, thr:thr};
 }
 
 /* ================= tooltip ================= */
@@ -935,6 +945,8 @@ function renderGauges(){
          : '低温降倍率：电池 '+m.Tb.toFixed(1)+' ℃ · 硬碳析钠窗口窄，倍率已压低——建议预热到 '+m.preheatTgt+' ℃'); }
   else if(chging && m.pk.key==='na'){ t.className='tstate good';
     t.textContent='钠电常温快充：当前 '+m.Tb.toFixed(1)+' ℃ 直接快充 '+m.Pchg.toFixed(0)+' kW · 产热约为锂系 1/4（同 600 kW 关液冷跑 15 min 实测：钠电升 3.6 ℃ vs 铁锂升 12.9 ℃），热管理可精简'; }
+  else if(S.mode==='drive' && S.thr>0 && m.derateP<0.9){ t.className='tstate heat';
+    t.textContent='低温放电功率折减：电池 '+m.Tb.toFixed(1)+' ℃ · 同一脚踏板只有额定 '+(m.derateP*100).toFixed(0)+'% 的功率（放电无析锂/析钠门限，靠降功率兜底）——大倍率放电的自产热会慢慢暖电池'; }
   else if(mm==='cool'){ t.className='tstate cool';
     t.textContent='制冷：压缩机 + 水泵高速，电池 '+m.Tb.toFixed(1)+' ℃ → 目标 33 ℃，附件 10 kW'; }
   else if(mm==='heat'){ t.className='tstate heat';
@@ -956,9 +968,11 @@ function paint(){
   var a=(S.mode==='drive')?S.thr:0;
   var b=(S.mode==='brake')?Math.abs(S.thr):0;
   var c=(S.mode==='charge')?S.chg:0;
+  var pk0=null; for(var i=0;i<PACKS.length;i++) if(PACKS[i].key===S.pack) pk0=PACKS[i];
+  var dP = pk0 ? interp(CURVE_P[pk0.key], S.tb) : 1;   // 当前温度下的放电功率保持率
   $('fillA').style.transform='scaleY('+(a/100)+')'; $('fillB').style.transform='scaleY('+(b/100)+')'; $('fillC').style.transform='scaleY('+(c/100)+')';
-  $('bigA').textContent=Math.round(a/100*450);
-  $('bigB').textContent=Math.round(b/100*200);
+  $('bigA').textContent=Math.round(a/100*450*dP);
+  $('bigB').textContent=Math.round(b/100*200*dP);
   $('bigC').textContent=Math.round(c/100*S.pile);
   $('bigA').classList.toggle('wt', a>52);
   $('bigB').classList.toggle('wt', b>52);
