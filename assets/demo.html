@@ -566,8 +566,8 @@ details.notes[open] summary{margin-bottom:8px;color:var(--l1)}
     <b>使用边界（参数口径，2026-10 与市面公布数据逐项核查锁定）：</b>
     ① LFP 系统能量密度 160 Wh/kg = 重卡主流 140-160 上沿（CTP/CTB 结构创新，CATL 神行包 170）；三元 200 取 LG/Northvolt 重卡 NCM 包 200-220 下沿。
     ② 固态 320 Wh/kg 取 2026 已装车商用车固态 300-380 区间下沿偏中（福田 380 / CATL-亿纬 360-380 / 三一全固态 ~315 / 长城 300），非实验室值。
-    ③ 钠电 140 = 钠新电芯 175 × 成组 ~80%；-40 ℃ 保持 90%+ 为一汽解放 J6P（339 kWh，中科海钠）实测口径，20-25 min 满充。
-    ④ 低温曲线与充电倍率折减取行业中值，实际需按电芯 DOE 标定；锂系 &lt;0 ℃ 析锂禁充、≥47 ℃ 热报警降流、≥52 ℃ 停充——可关掉液冷机组实测。
+    ③ 钠电 140 = 钠新电芯 175 × 成组 ~80%；-40 ℃ 保持 90%+ 为一汽解放 J6P（339 kWh，中科海钠）**放电**实测口径，20-25 min 满充为常温工况。
+    ④ 低温曲线与充电倍率折减取行业中值，实际需按电芯 DOE 标定；所有体系在 0 ℃ 以下充电都需要热管理介入——锂系 BMS 低于 0 ℃ 锁流防析锂、需拉到 15 ℃ 恢复倍率，钠电不锁流但硬碳析钠窗口更窄、倍率折减更陡、需拉到 5 ℃；≥47 ℃ 热报警降流、≥52 ℃ 停充——可关掉液冷机组实测。钠电的真正优势是常温快充产热约为锂系的 1/4，不是低温免预热。
     ⑤ 25 ℃ 满载电耗 130.6 kWh/100km，处于行业 120-150 区间（49 t 平路 1.0-1.25 kWh/km）；续航默认 80 km/h 满载等速口径。
     ⑥ 本演示为原理级仿真，几何为示意布置，不代表任何具体产品真实结构。
   </div>
@@ -589,7 +589,7 @@ var PACKS = [
   {key:'ss', name:'全固态 ASSB', color:'#0D9488', E:1150, whkg:320, cchg:3.0, heat:0.080, fcLo:10, fcHi:90,
    desc:'2026 年商用车固态电池已批量装车（福田 / 三一 / CATL-亿纬），系统级 300-380 Wh/kg，本演示取 320：同重量电量最大、本征安全、-30 ℃ 仍保持 90%，15 min 可补 80%。快充窗口 10–90%。成本与产能仍是约束，属量产初期。'},
   {key:'na', name:'钠离子 Na-ion', color:'#FF9500', E:550, whkg:140, cchg:2.5, heat:0.025, fcLo:5, fcHi:100,
-   desc:'系统能量密度约 140 Wh/kg（钠新电芯 175 × 成组 ~80%）——唯一全 SOC 窗口（5–100%）快充的体系：-20 ℃ 免预热直接大倍率、温升 <5 ℃；-40 ℃ 保持 90%+（解放 J6P 339 kWh 实测 20-25 min 满充）。硬伤是能量密度低，同重量电量最小、续航最短。'}
+   desc:'系统能量密度约 140 Wh/kg（钠新电芯 175 × 成组 ~80%），同重量电量最小、续航最短。真正的优势在**常温快充**：产热约为锂系的 1/4——同为 600 kW 快充、关掉液冷跑 15 min，钠电升 3.6 ℃、铁锂升 12.9 ℃，所以热管理功率与冷却回路可以大幅精简。低温充电同样受析钠约束：硬碳负极平台区距 0 V 析钠阈值仅 50~100 mV，窗口比石墨更窄，−20 ℃ 充电内阻可涨至数百毫欧、充入电量只有标称的五六成；工程通行做法是降到 0.2C 以下或先加热到 5 ℃ 以上。所以「−20 ℃ 免预热直接大倍率」不成立；−40 ℃ 保持 90%+ 是**放电**口径（解放 J6P 339 kWh 实测）。'}
 ];
 var CURVE_T = {
   lfp:[[-30,.55],[-20,.65],[-10,.75],[0,.85],[10,.93],[25,1],[40,1],[45,.98],[55,.94]],
@@ -601,7 +601,7 @@ var CURVE_C = {
   lfp:[[-30,.12],[-20,.22],[-10,.42],[0,.65],[10,.88],[25,1],[40,1],[45,.90],[55,.72]],
   nmc:[[-30,.18],[-20,.32],[-10,.52],[0,.74],[10,.90],[25,1],[40,1],[45,.88],[55,.70]],
   ss: [[-30,.35],[-20,.55],[-10,.70],[0,.86],[10,.94],[25,1],[40,1],[45,.92],[55,.78]],
-  na: [[-40,.50],[-30,.68],[-20,.85],[-10,.92],[0,.96],[10,.98],[25,1],[40,1],[45,.93],[55,.80]]
+  na: [[-40,.016],[-30,.024],[-20,.04],[-10,.08],[0,.24],[10,.60],[25,1],[40,1],[45,.93],[55,.80]]
 };
 var PARTS = {
   chiller:{t:'集成式液冷机组', s:'驾驶室前进风口 · 冷凝/压缩机/水泵/PTC 一体',
@@ -641,7 +641,7 @@ var TIPS = {
   pedBrake:{t:'制动踏板', s:'0~100% → 回收功率 0~-200 kW',
     b:'电制动优先：电机作发电机回充电池，同时提供制动扭矩，可显著减少机械制动磨损。能量流粒子反向。', k:[]},
   pedChg:{t:'充电踏板', s:'拖动直接选择充电功率（受桩上限、SOC 窗口与电池倍率限制）',
-    b:'请求功率 = 踏板深度 × 桩上限。实际功率取四者最小值：请求值、桩上限、电池当前温度允许的倍率、当前 SOC 所在窗口的收流系数。锂系（LFP/三元/固态）低于 0 ℃ 触发析锂禁充，需预热；钠电全窗口免预热。快充产热实时累积——关掉液冷机组，锂系很快热报警降流，钠电温升 <5 ℃ 基本无感。', k:[]},
+    b:'请求功率 = 踏板深度 × 桩上限。实际功率取四者最小值：请求值、桩上限、电池当前温度允许的倍率、当前 SOC 所在窗口的收流系数。所有体系在 0 ℃ 以下充电都要热管理介入：锂系（LFP/三元/固态）低于 0 ℃ 触发析锂保护锁流，需预热到 15 ℃ 恢复倍率；钠电不锁流，但倍率折减更陡，需预热到 5 ℃。快充产热实时累积——关掉液冷机组，锂系很快热报警降流，钠电常温快充产热约为锂系 1/4、温升 <6 ℃ 基本无感。', k:[]},
   pedIdle:{t:'待机', s:'松开所有踏板 = 车辆静止',
     b:'动力输出归零，仅液冷机组等附件耗电，SOC 极缓慢下降。', k:[]},
   gRange:{t:'剩余续航', s:'按当前 SOC · 温度 · 载荷 · 工况实时估算',
@@ -649,17 +649,17 @@ var TIPS = {
   gSoc:{t:'荷电状态 SOC', s:'仿真按 1 秒 = 1 分钟积分',
     b:'放电/回收功率对可用电量积分得到，可在 2%~100% 之间循环。', k:[]},
   gTemp:{t:'电池温度', s:'状态量：随产热/漏热实时演化',
-    b:'拖动环境温度滑块按"车辆冷浸一夜"处理——电池温度直接等于环境温度。机组开启时温控在 17~33 ℃：超 33 制冷（液冷回路 ~70 kW 换热）、低于 17 走 PTC（18 kW）、其间仅循环。关闭机组后温度按工况产热与自然漏热漂移——快充很快热报警，低温则禁充。', k:[]},
+    b:'拖动环境温度滑块按"车辆冷浸一夜"处理——电池温度直接等于环境温度。机组开启时温控在 17~33 ℃：超 33 制冷（液冷回路 ~70 kW 换热）、低于 17 走 PTC（18 kW）、其间仅循环。关闭机组后温度按工况产热与自然漏热漂移——快充很快热报警，低温则充电被限制（锂系锁流、钠电大幅降倍率）。', k:[]},
   gEcon:{t:'百公里电耗', s:'滚阻 + 风阻 + 附件功耗',
     b:'C = m·g·f·1000/(3.6e6·η) + 0.5ρ(Cd·A)v³·(3600/v)/(3.6e6·η) + P附件/v。整车越重、温度越极端，电耗越高。', k:[]},
   gCur:{t:'母线电流', s:'I = P / U，U 随 SOC 浮动（约 620~750 V）',
     b:'700 V 级平台典型值。电流是载流截面与温升设计的直接依据。', k:[]},
   gEav:{t:'可用电量', s:'= 额定 × 0.90（SOC 窗口）× 温度保持率',
-    b:'行业预留 5-10% 不用，取 0.90。温度保持率由各化学体系曲线决定（2026-10 核查锁定）：钠电 -20 ℃ 93% / -40 ℃ 90%+（解放 J6P 实测）最优，固态 -30 ℃ 90%（三一 CATL），三元 73%，LFP 65% 衰减最大。', k:[]},
+    b:'行业预留 5-10% 不用，取 0.90。温度保持率是**放电**口径，由各化学体系曲线决定（2026-10 核查锁定）：钠电 -20 ℃ 93% / -40 ℃ 90%+（解放 J6P 实测）最优，固态 -30 ℃ 90%（三一 CATL），三元 73%，LFP 65% 衰减最大。注意放电保持率好不等于低温能快充——充电侧的低温约束由倍率折减曲线单独刻画。', k:[]},
   gChg:{t:'充电 20%→80%', s:'取请求功率、桩上限、温度倍率、SOC 窗口四者最小值',
-    b:'按 20%→80% 口径估算。各体系快充窗口：LFP 20–90%、三元 20–80%、固态 10–90%、钠电 5–100%（全窗口）。低于 0 ℃ 锂系触发析锂禁充需预热（钠电免）；SOC 高出窗口后按体系收流。', k:[]},
+    b:'按 20%→80% 口径估算。各体系快充窗口：LFP 20–90%、三元 20–80%、固态 10–90%、钠电 5–100%（全窗口）。低温时所有体系都要先预热——锂系需拉到 15 ℃（BMS 解锁 + 倍率恢复），钠电需拉到 5 ℃；SOC 高出窗口后按体系收流。', k:[]},
   gPile:{t:'实际充电功率', s:'min(请求, 桩上限, 温度倍率, SOC 窗口) × 报警/禁充门限',
-    b:'电池能"吃"多少与桩能"给"多少是两条线，实际功率永远取较小者。低于 0 ℃ 锂系被 BMS 限到涓流（析锂保护）；电池 ≥47 ℃ 热报警降流至 30%，≥52 ℃ 停止充电。', k:[]},
+    b:'电池能"吃"多少与桩能"给"多少是两条线，实际功率永远取较小者。低于 0 ℃ 时锂系被 BMS 限到涓流（析锂保护），钠电不锁流但倍率被低温曲线压到 0.2C 以下；电池 ≥47 ℃ 热报警降流至 30%，≥52 ℃ 停止充电。', k:[]},
   gMass:{t:'整车总重', s:'满载模式固定 49 t；定载模式 = 15 + 25 + 电池重',
     b:'满载模式下电池增重表现为挤占载重；定载模式下直接推高电耗、吃掉续航。', k:[]},
   gCargo:{t:'可载货重量', s:'= 49 t − 底盘与上装自重 − 电池包重量',
@@ -691,16 +691,18 @@ function massOf(p){return p.E/p.whkg;}
 
 /* ================= 模型 ================= */
 /* 电池温度为状态量：产热（驱动/回收/充电）与温控/漏热的实时平衡 */
+/* 低温预热功率：机组 PTC 18 kW + 桩侧电池预热回路，合计按 45 kW 折算 */
+var PREHEAT_KW = 45;
 function thermalStep(pk, dtMin, pChg){
   var Ck = massOf(pk)*1000*950/3.6e6;            // kWh/K 整包热容
   var q = 0;
   if(S.mode==='drive')       q += Math.abs(S.thr)/100*450*0.030;
   else if(S.mode==='brake')  q += Math.abs(S.thr)/100*200*0.050;
-  else if(S.mode==='charge') q += pChg*pk.heat;   // 充电热损（钠电约为锂系 1/3，5C 温升<5K）
+  else if(S.mode==='charge') q += pChg*pk.heat;   // 充电热损（钠电常温快充产热约为锂系 1/4）
   var rm;
   if(S.tmOn){
     if(S.tb > 33)      rm = 70;                    // 制冷：热泵 + 液冷回路换热能力
-    else if(S.tb < 17) rm = -18;                   // PTC 加热 18 kW
+    else if(S.tb < 17) rm = -(S.mode==='charge' ? PREHEAT_KW : 18);  // 预热：充电时含桩侧回路
     else               rm = 0.06*Ck*(S.tb-S.temp); // 循环 + 液冷回路漏热
   }else{
     rm = 0.045*Ck*(S.tb-S.temp);                   // 自然对流
@@ -748,24 +750,35 @@ function compute(pk, opt){
   if(S.chtc) range *= 0.90;
 
   /* ---- 充电能力：四重限制 + 两类保护门限 ---- */
-  var derate = interp(CURVE_C[pk.key], Tb);        // 低温倍率折减
+  /* 低温预热功率：机组 PTC 18 kW + 桩侧电池预热回路（重卡直流桩标配），合计按 45 kW 折算 */
+  var derate = interp(CURVE_C[pk.key], Tb);        // 电芯低温倍率折减（所有体系都有）
   var win    = socWin(pk, soc);                    // SOC 窗口收流
-  var cold   = (Tb < 0 && pk.key!=='na');          // 析锂禁充（钠电豁免）
+  var preheatTgt = (pk.key==='na') ? 5 : 15;       // 恢复大倍率所需的最低电池温度
+  var cold   = (Tb < 0);                           // 低温充电状态
+  /* 锂系 0 ℃ 以下：BMS 析锂保护锁流，只走涓流（有效倍率压到 ~0.05C）；
+     钠电不锁流，靠电芯低温倍率折减自我限制（−20 ℃ 约 0.15C） */
+  var lockCharge = (pk.key!=='na') && (Tb < 0);
+  var needWarm  = (Tb < preheatTgt);               // 未达大倍率温度 → 需热管理介入
   var hot    = S.tb >= 47;                         // 热报警降流
   var hotStop= S.tb >= 52;                         // 热报警停充
   var gate = hotStop ? 0 : (hot ? 0.30 : 1);
-  if(cold) gate = Math.min(gate, 0.12);
+  if(lockCharge) gate = Math.min(gate, 0.12);
   var Preq = S.chg/100*S.pile;                     // 踏板请求功率
   var Pbatt = pk.E*pk.cchg*derate;                 // 电池当前温度允许的倍率上限
   var PchgMax = Math.min(Pbatt, S.pile)*win*gate;  // 当前实际能力上限
   var Pchg = Math.min(Preq, PchgMax);              // 实际功率（充电模式）
-  var preheat = (Tb<0 && pk.key!=='na') ? Math.max(0,15-Tb)*3.8 : 0;
-  /* 充电时间预估：冷态按"预热 + 回暖后速率"，热报警按降流后可达速率 */
+  /* 预热时间：PTC + 桩侧加热合计 PREHEAT_KW 对整包热容积分（整包越大拉温越慢），忽略散热 */
+  var Ck = mb*1000*950/3.6e6;                      // 整包热容 kWh/K
+  var preheatRate = 60*Ck/PREHEAT_KW;              // 拉温速率，min/℃
+  var preheat = needWarm ? Math.max(0, preheatTgt - Tb) * preheatRate : 0;
+  /* 充电时间预估（20%→80%）：
+     冷态 = 预热时间 + 回温后可用速率下的充电时间；
+     常态 = 满倍率充电时间。热报警按降流后可达速率计。 */
   var tchg;
-  if(cold){
-    var eta15 = interp(CURVE_T[pk.key], 15);
-    var rateAfter = Math.min(pk.E*pk.cchg*interp(CURVE_C[pk.key],15), S.pile)*win;
-    tchg = rateAfter>0 ? (0.6*pk.E*0.9*eta15/rateAfter*60 + preheat) : Infinity;
+  if(needWarm){
+    var etaTgt = interp(CURVE_T[pk.key], preheatTgt);
+    var rateAfter = Math.min(pk.E*pk.cchg*interp(CURVE_C[pk.key],preheatTgt), S.pile)*win;
+    tchg = rateAfter>0 ? (0.6*pk.E*0.9*etaTgt/rateAfter*60 + preheat) : Infinity;
   }else{
     var rateEst = Math.min(Pbatt, S.pile)*win*(hotStop?0.30:1);
     tchg = rateEst>0 ? 0.6*Eavail/rateEst*60 : Infinity;
@@ -779,7 +792,8 @@ function compute(pk, opt){
 
   return {pk:pk, Eavail:Eavail, etaT:etaT, mb:mb, cargo:cargo, mTot:mTot,
           Ckm:Ckm, range:range, Pchg:Pchg, PchgMax:PchgMax, Preq:Preq, Pbatt:Pbatt, tchg:tchg,
-          preheat:preheat, th:th, Tb:Tb, P:P, U:U, I:P*1000/U,
+          preheat:preheat, preheatTgt:preheatTgt, lockCharge:lockCharge, needWarm:needWarm,
+          th:th, Tb:Tb, P:P, U:U, I:P*1000/U,
           derate:derate, win:win, cold:cold, hot:hot, hotStop:hotStop, mode:mode, thr:thr};
 }
 
@@ -874,12 +888,14 @@ function renderGauges(){
   $('mKmMin').textContent  = (isFinite(m.tchg)&&m.tchg>0)? (m.range/m.tchg).toFixed(1)+' km/min' : '—';
   $('mChgP').textContent   = (S.mode==='charge'? m.Pchg : m.PchgMax).toFixed(0);
   var chging = (S.mode==='charge');
-  if(m.cold && chging){
-    $('mPreheat').textContent = S.tmOn ? '预热中 · PTC 拉温后恢复' : '禁充 · 需预热';
+  if(m.needWarm && chging){
+    $('mPreheat').textContent = S.tmOn
+      ? '预热中 · PTC 拉温至 '+m.preheatTgt+' ℃'
+      : (m.lockCharge ? '禁充锁流 · 需预热到 '+m.preheatTgt+' ℃' : '降倍率 · 建议预热到 '+m.preheatTgt+' ℃');
   }
   else if(m.preheat>0){ $('mPreheat').textContent = '含预热 '+m.preheat.toFixed(0)+' min'; }
-  else if(chging && m.pk.key==='na' && m.Tb<5){ $('mPreheat').textContent = '钠电免预热'; }
-  else { $('mPreheat').textContent = chging ? '正在充电' : '最大可用功率'; }
+  else if(chging){ $('mPreheat').textContent = '正在充电'; }
+  else { $('mPreheat').textContent = '最大可用功率'; }
   $('mMass').textContent   = m.mTot.toFixed(2);
   $('mBatW').textContent   = '电池 '+m.mb.toFixed(2)+' t';
   $('mCargo').textContent  = m.cargo.toFixed(2);
@@ -911,12 +927,14 @@ function renderGauges(){
     t.textContent='充电热报警：电池 '+m.Tb.toFixed(1)+' ℃ ≥52 · BMS 已停止充电，请开启液冷机组'; }
   else if(chging && m.hot){ t.className='tstate alarm';
     t.textContent='充电热报警：电池 '+m.Tb.toFixed(1)+' ℃ ≥47 · BMS 降流至 30%，高温快充加速衰减'; }
-  else if(chging && m.cold){ t.className='tstate alarm';
+  else if(chging && m.needWarm){ t.className='tstate alarm';
     t.textContent = S.tmOn
-      ? '低温预热中：电池 '+m.Tb.toFixed(1)+' ℃ <0 · PTC 拉温后自动恢复快充（锂系析锂保护）'
-      : '低温禁充：电池 '+m.Tb.toFixed(1)+' ℃ <0 · 析锂风险，BMS 限流涓充——请开热管理，钠电无此限制'; }
-  else if(chging && m.pk.key==='na' && m.Tb<10){ t.className='tstate good';
-    t.textContent='钠电免预热：电池 '+m.Tb.toFixed(1)+' ℃ 直接快充 '+m.Pchg.toFixed(0)+' kW，全程温升 <6 ℃，热管理可精简'; }
+      ? '低温预热中：电池 '+m.Tb.toFixed(1)+' ℃ · PTC 拉温至 '+m.preheatTgt+' ℃ 后恢复快充'
+      : (m.lockCharge
+         ? '低温禁充：电池 '+m.Tb.toFixed(1)+' ℃ <0 · 析锂风险，BMS 限流涓充——请开热管理'
+         : '低温降倍率：电池 '+m.Tb.toFixed(1)+' ℃ · 硬碳析钠窗口窄，倍率已压低——建议预热到 '+m.preheatTgt+' ℃'); }
+  else if(chging && m.pk.key==='na'){ t.className='tstate good';
+    t.textContent='钠电常温快充：当前 '+m.Tb.toFixed(1)+' ℃ 直接快充 '+m.Pchg.toFixed(0)+' kW · 产热约为锂系 1/4（同 600 kW 关液冷跑 15 min 实测：钠电升 3.6 ℃ vs 铁锂升 12.9 ℃），热管理可精简'; }
   else if(mm==='cool'){ t.className='tstate cool';
     t.textContent='制冷：压缩机 + 水泵高速，电池 '+m.Tb.toFixed(1)+' ℃ → 目标 33 ℃，附件 10 kW'; }
   else if(mm==='heat'){ t.className='tstate heat';
@@ -925,7 +943,7 @@ function renderGauges(){
     t.textContent='保温循环：电池 '+m.Tb.toFixed(1)+' ℃ 处于 17~33 ℃ 区间，仅水泵低流量均温（1 kW）'; }
   else { t.className='tstate off';
     var ex = m.Tb>45 ? '注意：高温无制冷虽省下约 10 kW 附件功耗，但会触发 BMS 限功率，实车不允许长期如此。'
-           : (m.Tb<0 ? '注意：此时充电将触发析锂禁充（钠电除外）。' : '');
+           : (m.Tb<0 ? '注意：此时充电将触发低温限制——锂系析锂锁流、钠电大幅降倍率，均需预热。' : '');
     t.textContent='热管理已关闭：电池 '+m.Tb.toFixed(1)+' ℃，容量保持 '+(m.etaT*100).toFixed(0)+'%。'+ex; }
 
   document.querySelectorAll('.pk .tick').forEach(function(u){ u.style.left=S.soc+'%'; });
@@ -1069,7 +1087,7 @@ requestAnimationFrame(loop);
 
 /* 调试/自动化测试钩子：确定性推进仿真（不依赖 rAF） */
 window.__sim = {
-  S:S, PACKS:PACKS, TRUCK:TRUCK,
+  S:S, PACKS:PACKS, TRUCK:TRUCK, compute:compute,
   step:function(sec){
     var n=Math.max(1,Math.round(sec*60));
     for(var i=0;i<n;i++) stepFrame(1/60);
